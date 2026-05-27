@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>総合展2026 AIガイド</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#f5f5f3}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:430px;background:#fff;min-height:100vh;display:flex;flex-direction:column}
+.hdr{padding:14px 16px 12px;background:#0F6E56;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr .ttl{font-size:15px;font-weight:600;color:#fff}
+.hdr .sub{font-size:10px;color:rgba(255,255,255,.75);margin-top:2px}
+.lang-sw{display:flex;gap:3px}
+.lb{padding:4px 9px;font-size:11px;border:1px solid rgba(255,255,255,.4);border-radius:6px;background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-weight:500}
+.lb.on{background:#fff;color:#0F6E56;border-color:#fff}
+#screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.screen{animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.home-hero{padding:22px 16px 8px}
+.home-hero h2{font-size:22px;font-weight:600;color:#1a1a18}
+.home-hero p{font-size:14px;color:#73726c;margin-top:5px}
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px 16px 0}
+.cc{background:#fff;border:1px solid #e8e7e1;border-radius:14px;padding:14px 14px;display:flex;align-items:center;gap:13px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cc:active{background:#f5f5f3;transform:scale(.97)}
+.cc-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.cc-label{font-size:15px;font-weight:600;color:#1a1a18;line-height:1.3}
+.cc-sub{font-size:11px;color:#888780;margin-top:3px}
+.mic-area{padding:24px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.mic-big{width:82px;height:82px;border-radius:50%;border:none;background:#0F6E56;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:32px;-webkit-tap-highlight-color:transparent}
+.mic-big:active{opacity:.85;transform:scale(.96)}
+.mic-big.rec{background:#E24B4A}
+.mic-lbl{font-size:14px;color:#73726c}
+.or-row{display:flex;align-items:center;gap:10px;padding:0 16px}
+.or-line{flex:1;height:1px;background:#e8e7e1}
+.or-txt{font-size:12px;color:#888780}
+.txt-row{display:flex;gap:8px;padding:12px 16px 24px}
+.txt-inp{flex:1;padding:13px 16px;font-size:16px;border:1.5px solid #d3d1c7;border-radius:14px;background:#fff;color:#1a1a18;outline:none;-webkit-appearance:none}
+.txt-inp:focus{border-color:#0F6E56}
+.snd-btn{width:50px;height:50px;border-radius:50%;border:none;background:#0F6E56;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;flex-shrink:0}
+.ld-screen{padding:60px 16px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.dots{display:flex;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%;background:#0F6E56;animation:b 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+.ld-txt{font-size:16px;color:#73726c}
+.res-hdr{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e7e1;background:#fff;position:sticky;top:0;z-index:10}
+.back-btn{width:40px;height:40px;border-radius:50%;border:1.5px solid #d3d1c7;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#444441;font-size:20px;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.back-btn:active{background:#f5f5f3}
+.res-q{font-size:16px;font-weight:600;color:#1a1a18;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res-cnt{font-size:13px;color:#73726c;white-space:nowrap}
+.res-msg{padding:14px 16px 6px;font-size:14px;color:#5F5E5A;line-height:1.7}
+.rcards{padding:8px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.rc{background:#fff;border:1px solid #e8e7e1;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px}
+.rc-booth{width:72px;height:72px;border-radius:12px;background:#FAEEDA;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.rc-bnum{font-size:21px;font-weight:700;color:#854F0B;line-height:1}
+.rc-blbl{font-size:10px;color:#BA7517;margin-top:4px}
+.rc-co{font-size:16px;font-weight:600;color:#1a1a18;line-height:1.3}
+.rc-prod{font-size:13px;color:#73726c;margin-top:5px;line-height:1.4}
+.map-sec{margin:0 16px 16px;border:1px solid #e8e7e1;border-radius:14px;overflow:hidden}
+.map-hdr{padding:9px 13px;border-bottom:1px solid #e8e7e1;font-size:12px;color:#73726c;display:flex;align-items:center;gap:5px;background:#f9f9f7}
+.no-res{padding:48px 16px;text-align:center}
+.no-res i{font-size:44px;color:#b4b2a9}
+.no-res h3{font-size:19px;font-weight:600;color:#1a1a18;margin:14px 0 7px}
+.no-res p{font-size:14px;color:#73726c;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hdr">
+  <div>
+    <div class="ttl">丸菱グループ 総合展2026</div>
+    <div class="sub">6/10・11 マリンメッセ福岡A館</div>
+  </div>
+  <div class="lang-sw">
+    <button class="lb on" onclick="setLang('ja',this)">JA</button>
+    <button class="lb" onclick="setLang('en',this)">EN</button>
+    <button class="lb" onclick="setLang('zh',this)">中</button>
+    <button class="lb" onclick="setLang('ko',this)">한</button>
+  </div>
+</div>
+<div id="screen"></div>
+</div>
+
+<script>
+const P=[
+  {b:'A-1',c:'フレンチパン神社',n:'天然酵母食パンミックス',t:['食パン','天然酵母','パン','ミックス粉','製パン']},
+  {b:'A-1',c:'フレンチパン神社',n:'クロワッサン用折り込み生地',t:['クロワッサン','バター','折り込み','製パン']},
+  {b:'A-1',c:'フレンチパン神社',n:'バゲット用準強力粉',t:['バゲット','粉','準強力粉','製パン','小麦粉']},
+  {b:'A-2',c:'大阪製菓材料',n:'グルテンフリースポンジミックス',t:['グルテンフリー','スポンジ','ケーキ','アレルゲン','ミックス粉']},
+  {b:'A-2',c:'大阪製菓材料',n:'卵不使用カステラミックス',t:['卵不使用','カステラ','アレルゲン','スポンジ']},
+  {b:'A-3',c:'北海道乳業',n:'北海道産生クリーム 47%',t:['生クリーム','乳製品','ホイップ','デコレーション']},
+  {b:'A-3',c:'北海道乳業',n:'無塩発酵バター(業務用)',t:['バター','乳製品','製菓','製パン']},
+  {b:'A-4',c:'京都抹茶工房',n:'宇治抹茶パウダー(業務用1kg)',t:['抹茶','パウダー','宇治','和素材']},
+  {b:'A-4',c:'京都抹茶工房',n:'抹茶チョコレートコーティング',t:['抹茶','チョコレート','コーティング']},
+  {b:'B-1',c:'ベルギーチョコ輸入',n:'クーベルチュール72%(ベルギー産)',t:['チョコレート','クーベルチュール','ビター']},
+  {b:'B-1',c:'ベルギーチョコ輸入',n:'ルビーチョコレートペースト',t:['チョコレート','ルビー','ピンク']},
+  {b:'B-1',c:'ベルギーチョコ輸入',n:'ホワイトチョコレートブロック',t:['チョコレート','ホワイト','製菓']},
+  {b:'B-2',c:'アレルゲンフリー工房',n:'卵不使用スポンジケーキミックス',t:['卵不使用','スポンジ','アレルゲン','グルテンフリー','ケーキ']},
+  {b:'B-2',c:'アレルゲンフリー工房',n:'7品目フリークリームパウダー',t:['アレルゲン','クリーム','7品目フリー','乳不使用']},
+  {b:'B-3',c:'フルーツピューレ専門店',n:'冷凍マンゴーピューレ',t:['マンゴー','フルーツ','ピューレ','冷凍']},
+  {b:'B-3',c:'フルーツピューレ専門店',n:'フランボワーズクーリ',t:['フランボワーズ','ラズベリー','ピューレ','冷凍']},
+  {b:'B-3',c:'フルーツピューレ専門店',n:'パッションフルーツピューレ',t:['パッションフルーツ','ピューレ','冷凍']},
+  {b:'B-4',c:'ケーキデコプロ',n:'食用金粉・銀粉セット',t:['デコレーション','金粉','銀粉','製菓']},
+  {b:'B-4',c:'ケーキデコプロ',n:'シュガーフラワーキット',t:['デコレーション','シュガー','フラワー']},
+  {b:'C-1',c:'製パン酵母研究所',n:'サフ赤ラベル業務用500g',t:['イースト','酵母','製パン','発酵']},
+  {b:'C-1',c:'製パン酵母研究所',n:'天然酵母スターターキット',t:['天然酵母','パン','発酵','スターター']},
+  {b:'C-2',c:'イタリア輸入食材',n:'マスカルポーネ業務用1kg',t:['マスカルポーネ','乳製品','チーズ','ティラミス']},
+  {b:'C-2',c:'イタリア輸入食材',n:'ティラミス用レディフィンガー',t:['ティラミス','ビスコット','イタリア']},
+  {b:'C-3',c:'カフェ向け素材',n:'コールドブリュー濃縮液',t:['コーヒー','カフェ','濃縮']},
+  {b:'C-3',c:'カフェ向け素材',n:'バニラビーンズペースト',t:['バニラ','ペースト','香料','製菓']},
+  {b:'C-4',c:'業務用冷凍食材',n:'急速冷凍いちご(ホール)',t:['いちご','フルーツ','冷凍','業務用']},
+  {b:'C-4',c:'業務用冷凍食材',n:'冷凍ブルーベリー業務用2kg',t:['ブルーベリー','フルーツ','冷凍','業務用']},
+];
+
+const BP={'A-1':{x:8,y:10},'A-2':{x:91,y:10},'A-3':{x:174,y:10},'A-4':{x:257,y:10},
+          'B-1':{x:8,y:68},'B-2':{x:91,y:68},'B-3':{x:174,y:68},'B-4':{x:257,y:68},
+          'C-1':{x:8,y:126},'C-2':{x:91,y:126},'C-3':{x:174,y:126},'C-4':{x:257,y:126}};
+const BW=75,BH=38;
+
+const CATS=[
+  {icon:'ti-grain',label:'粉・穀物',sub:'小麦粉・米粉・強力粉',bg:'#FAEEDA',ic:'#854F0B',q:'製粉 小麦粉 米粉 穀物 粉'},
+  {icon:'ti-droplet',label:'チョコ・油脂',sub:'チョコ・バター・油',bg:'#FAECE7',ic:'#993C1D',q:'チョコレート 油脂 バター カカオ'},
+  {icon:'ti-milk',label:'乳製品',sub:'クリーム・チーズ・バター',bg:'#E6F1FB',ic:'#185FA5',q:'生クリーム バター チーズ 乳製品'},
+  {icon:'ti-apple',label:'フルーツ',sub:'ピューレ・冷凍果物',bg:'#EAF3DE',ic:'#3B6D11',q:'フルーツ ピューレ 冷凍 果物 いちご'},
+  {icon:'ti-tool',label:'機械・設備',sub:'オーブン・ミキサー',bg:'#F1EFE8',ic:'#5F5E5A',q:'機械 設備 オーブン ミキサー'},
+  {icon:'ti-package',label:'包材',sub:'パッケージ・容器・箱',bg:'#EEEDFE',ic:'#534AB7',q:'包材 パッケージ 箱 容器'},
+  {icon:'ti-leaf',label:'アレルゲン対応',sub:'卵不使用・グルテンフリー',bg:'#E1F5EE',ic:'#0F6E56',q:'卵不使用 グルテンフリー アレルゲン対応 7品目'},
+  {icon:'ti-presentation',label:'セミナー・実演',sub:'時間・会場・スケジュール',bg:'#FBEAF0',ic:'#993556',q:'セミナー 実演 時間 スケジュール'},
+];
+
+const T={
+  ja:{welcome:'何をお探しですか？',sub:'カテゴリを選ぶか、話しかけてください',ph:'商品・ブース名を入力...',micLbl:'話しかける',searching:'検索しています...'},
+  en:{welcome:'What are you looking for?',sub:'Choose a category or speak',ph:'Search products or booths...',micLbl:'Speak',searching:'Searching...'},
+  zh:{welcome:'您在找什么？',sub:'选择类别或用语音搜索',ph:'搜索商品或展台...',micLbl:'语音搜索',searching:'搜索中...'},
+  ko:{welcome:'무엇을 찾고 계신가요？',sub:'카테고리를 선택하거나 말씀해 주세요',ph:'상품 또는 부스 검색...',micLbl:'말하기',searching:'검색 중...'},
+};
+
+let lang='ja',listening=false,recognition=null;
+
+function renderMap(hl=[]){
+  let h='<text x="8" y="58" font-size="8" fill="#888780" font-family="sans-serif">── 通路 ─────────────────────────────</text>';
+  h+='<text x="8" y="116" font-size="8" fill="#888780" font-family="sans-serif">── 通路 ─────────────────────────────</text>';
+  for(const[id,pos] of Object.entries(BP)){
+    const isHl=hl.includes(id);
+    const fill=isHl?'#FAEEDA':'#F1EFE8';
+    const stroke=isHl?'#BA7517':'#d3d1c7';
+    const sw=isHl?2:0.5;
+    const tc=isHl?'#854F0B':'#444441';
+    const sc='#888780';
+    h+=`<rect x="${pos.x}" y="${pos.y}" width="${BW}" height="${BH}" rx="5" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+    h+=`<text x="${pos.x+BW/2}" y="${pos.y+14}" text-anchor="middle" font-size="10" font-weight="${isHl?'700':'400'}" fill="${tc}" font-family="sans-serif">${id}</text>`;
+    const co=P.find(p=>p.b===id);
+    if(co){const ab=co.c.length>7?co.c.slice(0,6)+'…':co.c;h+=`<text x="${pos.x+BW/2}" y="${pos.y+27}" text-anchor="middle" font-size="8" fill="${sc}" font-family="sans-serif">${ab}</text>`;}
+    if(isHl)h+=`<circle cx="${pos.x+BW-7}" cy="${pos.y+7}" r="5" fill="#BA7517"/>`;
+  }
+  return h;
+}
+
+function showHome(){
+  const t=T[lang];
+  let cats='';
+  CATS.forEach(c=>{
+    cats+=`<div class="cc" onclick="search('${c.q}','${c.label}')">
+      <div class="cc-icon" style="background:${c.bg};color:${c.ic}"><i class="ti ${c.icon}"></i></div>
+      <div><div class="cc-label">${c.label}</div><div class="cc-sub">${c.sub}</div></div>
+    </div>`;
+  });
+  document.getElementById('screen').innerHTML=`
+  <div class="screen">
+    <div class="home-hero"><h2>${t.welcome}</h2><p>${t.sub}</p></div>
+    <div class="cat-grid">${cats}</div>
+    <div class="mic-area">
+      <button class="mic-big" id="mic" onclick="toggleMic()">
+        <i class="ti ti-microphone"></i>
+      </button>
+      <div class="mic-lbl">${t.micLbl}</div>
+    </div>
+    <div class="or-row"><div class="or-line"></div><div class="or-txt">または</div><div class="or-line"></div></div>
+    <div class="txt-row">
+      <input class="txt-inp" id="qi" placeholder="${t.ph}" onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v){search(v,v);this.value=''}}">
+      <button class="snd-btn" onclick="var v=document.getElementById('qi');if(v&&v.value.trim()){search(v.value.trim(),v.value.trim());v.value=''}">
+        <i class="ti ti-send"></i>
+      </button>
+    </div>
+  </div>`;
+}
+
+function showLoading(){
+  document.getElementById('screen').innerHTML=`
+  <div class="screen ld-screen">
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="ld-txt">${T[lang].searching}</div>
+  </div>`;
+}
+
+function showResults(data,label){
+  const prods=data.products||[];
+  const booths=data.booths||[];
+  let cards='';
+  prods.forEach(p=>{
+    cards+=`<div class="rc">
+      <div class="rc-booth"><div class="rc-bnum">${p.booth||p.b}</div><div class="rc-blbl">ブース</div></div>
+      <div><div class="rc-co">${p.company||p.c}</div><div class="rc-prod">${p.name||p.n}</div></div>
+    </div>`;
+  });
+  const mapHtml=booths.length?`
+    <div class="map-sec">
+      <div class="map-hdr"><i class="ti ti-map-pin"></i> 会場MAP — 該当ブースをハイライト</div>
+      <svg viewBox="0 0 334 165" width="100%" style="display:block">${renderMap(booths)}</svg>
+    </div>`:'';
+  const noRes=!prods.length?`
+    <div class="no-res">
+      <i class="ti ti-search"></i>
+      <h3>見つかりませんでした</h3>
+      <p>${data.answer||'別のキーワードで検索してみてください'}</p>
+    </div>`:'';
+  document.getElementById('screen').innerHTML=`
+  <div class="screen">
+    <div class="res-hdr">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">${label}</div>
+      ${prods.length?`<div class="res-cnt">${prods.length}件</div>`:''}
+    </div>
+    ${prods.length?`<div class="res-msg">${data.answer||''}</div>`:''}
+    <div class="rcards">${cards}</div>
+    ${mapHtml}
+    ${noRes}
+  </div>`;
+}
+
+async function search(q,label){
+  if(!q.trim())return;
+  showLoading();
+  try{
+    const sys=`You are a trade show AI guide for 丸菱グループ総合展2026.
+Product database: ${JSON.stringify(P)}
+Return ONLY valid JSON:
+{"answer":"1-2 sentence Japanese response","booths":["A-1"],"products":[{"booth":"A-1","company":"name","name":"product"}],"not_found":false}
+If no match: not_found=true, empty arrays. Respond in same language as query.`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:sys,messages:[{role:'user',content:q}]})});
+    const data=await res.json();
+    const raw=(data.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    let parsed;try{parsed=JSON.parse(raw);}catch{parsed={answer:raw,booths:[],products:[],not_found:false};}
+    showResults(parsed,label);
+  }catch(e){
+    showResults({answer:'少し時間をおいて再度お試しください。',booths:[],products:[],not_found:true},label);
+  }
+}
+
+function setLang(l,btn){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  showHome();
+}
+
+function toggleMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const btn=document.getElementById('mic');
+  if(!SR){alert('音声入力はこのブラウザでは利用できません');return;}
+  if(listening){recognition&&recognition.stop();listening=false;if(btn)btn.classList.remove('rec');return;}
+  recognition=new SR();
+  recognition.lang=lang==='ja'?'ja-JP':lang==='zh'?'zh-CN':lang==='ko'?'ko-KR':'en-US';
+  recognition.continuous=false;recognition.interimResults=false;
+  recognition.onresult=e=>{const t=e.results[0][0].transcript;listening=false;if(btn)btn.classList.remove('rec');search(t,t);};
+  recognition.onerror=recognition.onend=()=>{listening=false;if(btn)btn.classList.remove('rec');};
+  recognition.start();listening=true;if(btn)btn.classList.add('rec');
+}
+
+showHome();
+</script>
+</body>
+</html>
