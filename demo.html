@@ -439,6 +439,18 @@ function search(q, label) {
     .slice(0, 20)
     .map(r => Object.assign({}, r.item, { score: r.score, matchedTags: r.matched }));
 
+  // アンケート用ブース履歴
+  top.forEach(r => {
+    if (visitedBooths.indexOf(r.booth) < 0) visitedBooths.push(r.booth);
+  });
+
+  // ログ記録
+  const booths = top.map(r => r.booth).join(',');
+  sendLog({ keyword: q, lang: lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount: searchCount });
+
+  showResults(top, label);
+}
+
 
 function sendLog(params) {
   const url = GAS_URL + '?action=log'
