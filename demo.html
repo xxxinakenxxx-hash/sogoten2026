@@ -368,20 +368,37 @@ function search(q, label) {
   showLoading();
   searchCount++;
 
-  // キーワードをトークン分割
-  const keywords = q.replace(/[、。，．\s]+/g, ' ').trim().split(' ').filter(Boolean);
+  // 日本語対応検索：タグがクエリ文字列に含まれるかを逆引きでチェック
+  const qNorm = q.replace(/[　\s]/g, '').toLowerCase();
 
   const results = [];
   P.forEach(item => {
-    const tagStr = (item.tags || []).join(' ') + ' ' + item.company;
+    const tags = item.tags || [];
     let score = 0;
     const matched = [];
-    keywords.forEach(kw => {
-      if (tagStr.includes(kw)) {
-        score++;
-        matched.push(kw);
+
+    tags.forEach(tag => {
+      const t = tag.trim().toLowerCase();
+      if (!t) return;
+      // ① タグがクエリに含まれる（日本語自然文対応）
+      if (qNorm.includes(t)) {
+        score += t.length >= 4 ? 3 : 2; // 長いタグは高スコア
+        matched.push(tag);
+      }
+      // ② クエリがタグに含まれる（短いキーワード入力対応）
+      else if (t.includes(qNorm) && qNorm.length >= 2) {
+        score += 1;
+        matched.push(tag);
       }
     });
+
+    // 会社名チェック
+    const coNorm = item.company.replace(/[株式会社㈱㈲有限会社\s]/g, '').toLowerCase();
+    if (qNorm.includes(coNorm) || coNorm.includes(qNorm)) {
+      score += 5;
+      matched.push(item.company);
+    }
+
     if (score > 0) results.push({ ...item, score, matchedTags: matched });
   });
 
