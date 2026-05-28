@@ -409,54 +409,53 @@ const MAP_COLORS = {"A": "#854F0B", "B": "#185FA5", "C": "#0F6E56", "D": "#99355
 const MAP_BG = {"A": "#FAEEDA", "B": "#E6F1FB", "C": "#E1F5EE", "D": "#FBEAF0"};
 const SVG_INNER = ''; // loaded via fetch
 
-// venue_map.svgのキャッシュ
-let _svgCache = null;
-async function loadMapSVG() {
-  if(_svgCache) return _svgCache;
-  try {
-    const res = await fetch('venue_map.svg');
-    const text = await res.text();
-    // SVGの中身だけ抽出
-    const m = text.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
-    _svgCache = m ? m[1] : '';
-  } catch(e) { _svgCache = ''; }
-  return _svgCache;
-}
-
 function buildMapSVG(highlightIds) {
-  // シンプルなプレースホルダーを返す（SVGは非同期で差し替え）
-  const id = 'map_' + Date.now();
-  // 非同期でSVGを読み込んで差し替え
-  setTimeout(async () => {
-    const inner = await loadMapSVG();
-    const el = document.getElementById(id);
-    if(!el) return;
-    let boothLayer = '';
-    (highlightIds||[]).forEach(bid => {
-      const pos = BOOTH_COORDS[bid];
-      if(!pos) return;
-      const s = bid[0];
-      const c = MAP_COLORS[s]||'#854F0B', b = MAP_BG[s]||'#FAEEDA';
-      boothLayer += '<g>'
-        + '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="10" fill="none" stroke="'+c+'" stroke-width="1.5" opacity="0.35"/>'
-        + '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="7" fill="'+b+'" stroke="'+c+'" stroke-width="2"/>'
-        + '<text x="'+pos.cx+'" y="'+(pos.cy+3)+'" text-anchor="middle" font-size="5" fill="'+c+'" font-weight="700" font-family="sans-serif">'+bid+'</text>'
-        + '</g>';
-    });
-    let facLayer = '';
-    Object.entries(FACILITY_COORDS).forEach(function(entry) {
-      const name = entry[0], fac = entry[1];
-      const tw = name.length * 5.2 + 10;
-      facLayer += '<g>'
-        + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-9)+'" width="'+tw+'" height="13" rx="4" fill="#1a1a18" opacity="0.85"/>'
-        + '<text x="'+fac.cx+'" y="'+(fac.cy+2)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon?fac.icon+' ':'')+name+'</text>'
-        + '</g>';
-    });
-    el.innerHTML = inner + '<g>'+facLayer+'</g><g>'+boothLayer+'</g>';
-  }, 50);
-  return '<svg id="'+id+'" viewBox="0 0 561 734" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block">'
-       + '<text x="280" y="370" text-anchor="middle" font-size="14" fill="#888">MAP読み込み中...</text>'
-       + '</svg>';
+  // ブース位置の全背景（薄いドット）
+  let bgDots = '';
+  Object.entries(BOOTH_COORDS).forEach(function(e) {
+    const bid = e[0], pos = e[1];
+    bgDots += '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="3.5" fill="#e8e7e1"/>';
+  });
+
+  // 施設ラベル
+  let facLayer = '';
+  Object.entries(FACILITY_COORDS).forEach(function(entry) {
+    const name = entry[0], fac = entry[1];
+    const tw = name.length * 5.5 + 10;
+    facLayer += '<g>'
+      + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-8)+'" width="'+tw+'" height="12" rx="3" fill="#333" opacity="0.8"/>'
+      + '<text x="'+fac.cx+'" y="'+(fac.cy+2)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
+      + '</g>';
+  });
+
+  // ハイライトブース
+  let hlLayer = '';
+  (highlightIds||[]).forEach(function(bid) {
+    const pos = BOOTH_COORDS[bid];
+    if(!pos) return;
+    const s = bid[0];
+    const c = MAP_COLORS[s]||'#854F0B', b = MAP_BG[s]||'#FAEEDA';
+    hlLayer += '<g>'
+      + '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="12" fill="'+b+'" stroke="'+c+'" stroke-width="2.5"/>'
+      + '<text x="'+pos.cx+'" y="'+(pos.cy-2)+'" text-anchor="middle" font-size="5" fill="'+c+'" font-weight="700" font-family="sans-serif">'+bid+'</text>'
+      + '</g>';
+  });
+
+  // セクションラベル
+  const secLabels =
+    '<text x="420" y="395" font-size="60" fill="#f5f5f3" font-weight="900" font-family="sans-serif" opacity="0.6">A</text>'
+  + '<text x="130" y="395" font-size="60" fill="#f0f9ff" font-weight="900" font-family="sans-serif" opacity="0.6">B</text>'
+  + '<text x="420" y="195" font-size="60" fill="#f0fff4" font-weight="900" font-family="sans-serif" opacity="0.6">C</text>'
+  + '<text x="130" y="195" font-size="60" fill="#fff0f9" font-weight="900" font-family="sans-serif" opacity="0.6">D</text>';
+
+  return '<svg viewBox="0 0 561 734" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fafaf8">'
+    + '<line x1="280" y1="0" x2="280" y2="734" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
+    + '<line x1="0" y1="370" x2="561" y2="370" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
+    + secLabels
+    + '<g>' + bgDots + '</g>'
+    + '<g>' + facLayer + '</g>'
+    + '<g>' + hlLayer + '</g>'
+    + '</svg>';
 }
 
 
