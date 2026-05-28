@@ -139,11 +139,34 @@ let SEMINARS = [];
 // 起動時：GASからデータ取得
 // ============================================================
 window.addEventListener('load', async () => {
-  // まずサンプルデータで即表示
+  // まずサンプルデータで即表示してから、GASデータを取得
   P = SAMPLE_P;
   SEMINARS = SAMPLE_SEMINARS;
   initFuse();
   showHome();
+
+  // バックグラウンドでGASからデータ取得（5秒タイムアウト）
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const [prodRes, semRes] = await Promise.all([
+      fetch(GAS_URL + '?action=products', {signal: ctrl.signal}),
+      fetch(GAS_URL + '?action=seminar',  {signal: ctrl.signal}),
+    ]);
+    clearTimeout(timer);
+    const prodData = await prodRes.json();
+    const semData  = await semRes.json();
+    if (prodData.products && prodData.products.length > 0) {
+      P = prodData.products;
+      initFuse();
+      console.log('✅ GASデータ取得完了: ' + P.length + '社');
+    }
+    if (semData.seminars && semData.seminars.length > 0) {
+      SEMINARS = semData.seminars;
+    }
+  } catch (e) {
+    console.warn('GAS未接続。サンプルデータで動作中。', e.message);
+  }
   // 隠しSVGマップを初期化（検索結果用）
   if(!document.getElementById('hidden-map')) {
     const div = document.createElement('div');
