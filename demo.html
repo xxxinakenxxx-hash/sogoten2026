@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>総合展2026 AIガイド</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#f5f5f3}
@@ -121,6 +122,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9o
 // 状態管理
 // ============================================================
 let lang        = 'ja';
+let fuse        = null; // Fuse.js インスタンス
 let listening   = false;
 let recognition = null;
 let searchCount = 0;
@@ -140,6 +142,7 @@ window.addEventListener('load', async () => {
   // まずサンプルデータで即表示
   P = SAMPLE_P;
   SEMINARS = SAMPLE_SEMINARS;
+  initFuse();
   showHome();
 
   // バックグラウンドでGASからデータ取得（5秒タイムアウト）
@@ -364,62 +367,79 @@ function showResults(results, label) {
 // ============================================================
 // 検索エンジン（Fuse.js ライク・タグマッチ）
 // ============================================================
+function initFuse() {
+  if (typeof Fuse === 'undefined') return;
+  fuse = new Fuse(P, {
+    keys: [
+      { name: 'company', weight: 3 },
+      { name: 'tags',    weight: 2 },
+    ],
+    threshold:       0.35,
+    includeScore:    true,
+    ignoreLocation:  true,
+    minMatchCharLength: 2,
+  });
+}
+
 function search(q, label) {
   showLoading();
   searchCount++;
 
-  // 日本語対応検索：タグがクエリ文字列に含まれるかを逆引きでチェック
-  const qNorm = q.replace(/[　\s]/g, '').toLowerCase();
+  const qNorm = q.trim().replace(/[\u3000\s]/g, '').toLowerCase();
+  if (!qNorm) { showResults([], label); return; }
 
-  const results = [];
+  const resultMap = new Map();
+
+  // ── 方式1: 2段階タグ検索（日本語自然文・音声入力対応）──
+  const matchedKws = new Set();
   P.forEach(item => {
-    const tags = item.tags || [];
+    (item.tags || []).forEach(tag => {
+      const t = tag.trim().toLowerCase();
+      if (t.length >= 2 && qNorm.indexOf(t) >= 0) matchedKws.add(t);
+    });
+  });
+  if (qNorm.length >= 2) matchedKws.add(qNorm);
+
+  P.forEach(item => {
     let score = 0;
     const matched = [];
-
-    tags.forEach(tag => {
+    (item.tags || []).forEach(tag => {
       const t = tag.trim().toLowerCase();
-      if (!t) return;
-      // ① タグがクエリに含まれる（日本語自然文対応）
-      if (qNorm.includes(t)) {
-        score += t.length >= 4 ? 3 : 2; // 長いタグは高スコア
-        matched.push(tag);
-      }
-      // ② クエリがタグに含まれる（短いキーワード入力対応）
-      else if (t.includes(qNorm) && qNorm.length >= 2) {
-        score += 1;
-        matched.push(tag);
+      if (!t || t.length < 2) return;
+      for (const kw of matchedKws) {
+        if (t.indexOf(kw) >= 0 || kw.indexOf(t) >= 0) {
+          score += kw.length;
+          if (matched.indexOf(tag) < 0) matched.push(tag);
+          break;
+        }
       }
     });
-
-    // 会社名チェック
-    const coNorm = item.company.replace(/[株式会社㈱㈲有限会社\s]/g, '').toLowerCase();
-    if (qNorm.includes(coNorm) || coNorm.includes(qNorm)) {
-      score += 5;
-      matched.push(item.company);
+    const co = item.company.replace(/[株式会社㈱㈲有限会社]/g, '').toLowerCase();
+    if (co.length >= 2 && (qNorm.indexOf(co) >= 0 || co.indexOf(qNorm) >= 0)) {
+      score += 20; matched.push(item.company);
     }
-
-    if (score > 0) results.push({ ...item, score, matchedTags: matched });
+    if (score > 0) resultMap.set(item.booth + '|' + item.company, { item, score, matched });
   });
 
-  results.sort((a, b) => b.score - a.score);
-  const top = results.slice(0, 20);
+  // ── 方式2: Fuse.js ファジー検索（誤字・略語・英語対応）──
+  if (fuse) {
+    fuse.search(q, { limit: 20 }).forEach(r => {
+      const key = r.item.booth + '|' + r.item.company;
+      const fs  = Math.round((1 - (r.score || 0)) * 8);
+      if (resultMap.has(key)) {
+        resultMap.get(key).score += fs;
+      } else if (fs >= 2) {
+        resultMap.set(key, { item: r.item, score: fs, matched: [] });
+      }
+    });
+  }
 
-  // ブース履歴に追加（アンケート用）
-  top.forEach(r => {
-    if (!visitedBooths.includes(r.booth)) visitedBooths.push(r.booth);
-  });
+  const top = [...resultMap.values()]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 20)
+    .map(r => Object.assign({}, r.item, { score: r.score, matchedTags: r.matched }));
 
-  // ログ記録（fire-and-forget）
-  const booths = top.map(r => r.booth).join(',');
-  sendLog({ keyword: q, lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount });
 
-  showResults(top, label);
-}
-
-// ============================================================
-// GASへのログ送信
-// ============================================================
 function sendLog(params) {
   const url = GAS_URL + '?action=log'
     + '&keyword=' + encodeURIComponent(params.keyword)
