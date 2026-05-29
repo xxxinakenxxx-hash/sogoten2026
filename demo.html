@@ -141,6 +141,197 @@ let SEMINARS = [];
 let VENUE_SVG_INNER = '';  // venue_map.svgの中身（fetchで取得）
 
 // ============================================================
+// 通路データ（ユーザー指定）
+// ============================================================
+const H_CORRIDORS = [
+  {"y":366,"x1":11,"x2":525},{"y":723,"x1":13,"x2":477},{"y":676,"x1":14,"x2":476},
+  {"y":511,"x1":114,"x2":453},{"y":443,"x1":108,"x2":447},{"y":525,"x1":454,"x2":530},
+  {"y":88,"x1":40,"x2":522},{"y":240,"x1":42,"x2":115},{"y":198,"x1":118,"x2":280},
+  {"y":129,"x1":118,"x2":280},{"y":158,"x1":280,"x2":447},{"y":289,"x1":283,"x2":451},
+  {"y":266,"x1":116,"x2":281},{"y":494,"x1":41,"x2":104},{"y":214,"x1":449,"x2":527},
+  {"y":578,"x1":107,"x2":475},{"y":627,"x1":108,"x2":473},{"y":644,"x1":476,"x2":529}
+];
+const V_CORRIDORS = [
+  {"x":450,"y1":88,"y2":365},{"x":524,"y1":88,"y2":365},{"x":282,"y1":89,"y2":367},
+  {"x":282,"y1":367,"y2":721},{"x":127,"y1":676,"y2":722},{"x":14,"y1":675,"y2":723},
+  {"x":39,"y1":492,"y2":674},{"x":108,"y1":364,"y2":675},{"x":452,"y1":365,"y2":525},
+  {"x":474,"y1":526,"y2":723},{"x":528,"y1":365,"y2":642},{"x":118,"y1":90,"y2":266},
+  {"x":120,"y1":268,"y2":367},{"x":41,"y1":88,"y2":365}
+];
+
+// ============================================================
+// 通路グラフ構築（起動時に1回）
+// ============================================================
+let CORRIDOR_GRAPH = null;
+function buildCorridorGraph() {
+  const nodes = []; // {x,y}
+  const edges = []; // {a,b,d}
+  function findOrAdd(x, y) {
+    for(let i=0; i<nodes.length; i++) {
+      if(Math.abs(nodes[i].x-x)<0.5 && Math.abs(nodes[i].y-y)<0.5) return i;
+    }
+    nodes.push({x:x, y:y});
+    return nodes.length - 1;
+  }
+
+  // H通路ごとに端点+交差点をノード化、隣接エッジ
+  H_CORRIDORS.forEach(function(h) {
+    const pts = [{x:h.x1, y:h.y}, {x:h.x2, y:h.y}];
+    V_CORRIDORS.forEach(function(v) {
+      if(v.x >= h.x1 && v.x <= h.x2 && h.y >= v.y1 && h.y <= v.y2) {
+        pts.push({x:v.x, y:h.y});
+      }
+    });
+    pts.sort(function(a,b){return a.x-b.x;});
+    let prev = -1;
+    pts.forEach(function(p) {
+      const id = findOrAdd(p.x, p.y);
+      if(prev !== -1 && prev !== id) {
+        edges.push({a:prev, b:id, d:Math.abs(nodes[id].x - nodes[prev].x)});
+      }
+      prev = id;
+    });
+  });
+
+  // V通路も同様
+  V_CORRIDORS.forEach(function(v) {
+    const pts = [{x:v.x, y:v.y1}, {x:v.x, y:v.y2}];
+    H_CORRIDORS.forEach(function(h) {
+      if(v.x >= h.x1 && v.x <= h.x2 && h.y >= v.y1 && h.y <= v.y2) {
+        pts.push({x:v.x, y:h.y});
+      }
+    });
+    pts.sort(function(a,b){return a.y-b.y;});
+    let prev = -1;
+    pts.forEach(function(p) {
+      const id = findOrAdd(p.x, p.y);
+      if(prev !== -1 && prev !== id) {
+        edges.push({a:prev, b:id, d:Math.abs(nodes[id].y - nodes[prev].y)});
+      }
+      prev = id;
+    });
+  });
+  return {nodes:nodes, edges:edges};
+}
+
+// ============================================================
+// ブース座標から最寄り通路点を見つけ、グラフに挿入
+// ============================================================
+function nearestCorridorPoint(bx, by) {
+  let best = null, bestD = Infinity;
+  H_CORRIDORS.forEach(function(h, i) {
+    let px;
+    if(bx < h.x1) px = h.x1;
+    else if(bx > h.x2) px = h.x2;
+    else px = bx;
+    const d = Math.hypot(bx - px, by - h.y);
+    if(d < bestD) { bestD = d; best = {x:px, y:h.y, type:'h', idx:i}; }
+  });
+  V_CORRIDORS.forEach(function(v, i) {
+    let py;
+    if(by < v.y1) py = v.y1;
+    else if(by > v.y2) py = v.y2;
+    else py = by;
+    const d = Math.hypot(bx - v.x, by - py);
+    if(d < bestD) { bestD = d; best = {x:v.x, y:py, type:'v', idx:i}; }
+  });
+  return best;
+}
+
+// エントリーポイントをグラフに追加し、そのノードIDを返す
+function insertEntryNode(graph, entry) {
+  // 既存ノードに同座標があれば再利用
+  for(let i=0; i<graph.nodes.length; i++) {
+    if(Math.abs(graph.nodes[i].x-entry.x)<0.5 && Math.abs(graph.nodes[i].y-entry.y)<0.5) return i;
+  }
+  const newId = graph.nodes.length;
+  graph.nodes.push({x:entry.x, y:entry.y});
+  // 同じ通路上の全ノードと接続（後続のダイクストラで最短が選ばれる）
+  if(entry.type === 'h') {
+    const h = H_CORRIDORS[entry.idx];
+    graph.nodes.forEach(function(n, i) {
+      if(i === newId) return;
+      if(Math.abs(n.y - h.y) < 0.5 && n.x >= h.x1 - 0.5 && n.x <= h.x2 + 0.5) {
+        graph.edges.push({a:newId, b:i, d:Math.abs(entry.x - n.x)});
+      }
+    });
+  } else {
+    const v = V_CORRIDORS[entry.idx];
+    graph.nodes.forEach(function(n, i) {
+      if(i === newId) return;
+      if(Math.abs(n.x - v.x) < 0.5 && n.y >= v.y1 - 0.5 && n.y <= v.y2 + 0.5) {
+        graph.edges.push({a:newId, b:i, d:Math.abs(entry.y - n.y)});
+      }
+    });
+  }
+  return newId;
+}
+
+// ============================================================
+// ダイクストラ最短経路
+// ============================================================
+function dijkstra(graph, start, end) {
+  const n = graph.nodes.length;
+  const dist = new Array(n).fill(Infinity);
+  const prev = new Array(n).fill(-1);
+  const visited = new Array(n).fill(false);
+  const adj = new Array(n).fill(null).map(function(){return [];});
+  graph.edges.forEach(function(e) {
+    adj[e.a].push({to:e.b, w:e.d});
+    adj[e.b].push({to:e.a, w:e.d});
+  });
+  dist[start] = 0;
+  for(let i=0; i<n; i++) {
+    let u = -1, mn = Infinity;
+    for(let j=0; j<n; j++) {
+      if(!visited[j] && dist[j] < mn) { mn = dist[j]; u = j; }
+    }
+    if(u === -1 || u === end) break;
+    visited[u] = true;
+    adj[u].forEach(function(e) {
+      if(dist[u] + e.w < dist[e.to]) {
+        dist[e.to] = dist[u] + e.w;
+        prev[e.to] = u;
+      }
+    });
+  }
+  if(dist[end] === Infinity) return [];
+  const path = [];
+  for(let cur = end; cur !== -1; cur = prev[cur]) path.unshift(cur);
+  return path;
+}
+
+// 経路探索メイン：from/to のブース座標から、SVG path文字列を返す
+function findCorridorRoute(from, to) {
+  if(!CORRIDOR_GRAPH) return null;
+  // グラフを毎回コピー（エントリーノードを追加するため）
+  const g = {
+    nodes: CORRIDOR_GRAPH.nodes.map(function(n){return {x:n.x, y:n.y};}),
+    edges: CORRIDOR_GRAPH.edges.slice()
+  };
+  const fromEntry = nearestCorridorPoint(from.cx, from.cy);
+  const toEntry = nearestCorridorPoint(to.cx, to.cy);
+  if(!fromEntry || !toEntry) return null;
+  const fromId = insertEntryNode(g, fromEntry);
+  const toId = insertEntryNode(g, toEntry);
+  const path = dijkstra(g, fromId, toId);
+  if(path.length === 0) return null;
+  // SVG path 構築：ブース→エントリー→...→エントリー→ブース
+  const points = [{x:from.cx, y:from.cy}];
+  path.forEach(function(id) { points.push(g.nodes[id]); });
+  points.push({x:to.cx, y:to.cy});
+  // 連続する同座標を除去
+  const clean = [points[0]];
+  for(let i=1; i<points.length; i++) {
+    const p = points[i], last = clean[clean.length-1];
+    if(Math.abs(p.x-last.x)>0.5 || Math.abs(p.y-last.y)>0.5) clean.push(p);
+  }
+  return 'M' + clean.map(function(p){return p.x+','+p.y;}).join(' L');
+}
+
+let _mapView = { x: 0, y: 0, w: 561, h: 734 };
+
+// ============================================================
 // 起動時：GASからデータ取得
 // ============================================================
 window.addEventListener('load', async () => {
@@ -148,6 +339,9 @@ window.addEventListener('load', async () => {
   P = SAMPLE_P;
   SEMINARS = SAMPLE_SEMINARS;
   initFuse();
+  // 通路グラフ構築
+  CORRIDOR_GRAPH = buildCorridorGraph();
+  console.log('✅ 通路グラフ構築: ノード'+CORRIDOR_GRAPH.nodes.length+'個, エッジ'+CORRIDOR_GRAPH.edges.length+'本');
   showHome();
 
   // 会場SVG読込（同ディレクトリのvenue_map.svg）
@@ -451,9 +645,6 @@ function showMapScreen(focusBooth) {
   attachMapInteractions();
 }
 
-// viewBoxの現在状態
-let _mapView = { x: 0, y: 0, w: 561, h: 734 };
-
 function applyViewBox() {
   const svg = document.querySelector('#map-svg-wrap svg');
   if(!svg) return;
@@ -619,48 +810,20 @@ function buildMapSVG(highlightIds, focusPos, fromBooth) {
       + '</g>';
   });
 
-  // ── 経路（通路を経由するコの字ルート）──
+  // ── 経路（通路グラフをダイクストラで探索）──
   let routeLayer = '';
   if(fromBooth && BOOTH_COORDS[fromBooth]) {
     const fp = BOOTH_COORDS[fromBooth];
-    const CORRIDOR_Y = 370;  // 中央横通路
-    const CORRIDOR_X = 280;  // 中央縦通路
 
     (highlightIds||[]).forEach(function(bid) {
       if(bid === fromBooth) return;
       const tp = BOOTH_COORDS[bid];
       if(!tp) return;
-
-      const fs = fromBooth[0], ts = bid[0];
-      let pathD;
-
-      if(fs === ts) {
-        // 同セクション内 → 中間yで折れるコの字経路
-        const midY = Math.round((fp.cy + tp.cy) / 2);
-        pathD = 'M'+fp.cx+','+fp.cy
-              +' L'+fp.cx+','+midY
-              +' L'+tp.cx+','+midY
-              +' L'+tp.cx+','+tp.cy;
-      } else {
-        // 異セクション → 中央十字通路を経由
-        const fY = fp.cy < CORRIDOR_Y ? CORRIDOR_Y - 18 : CORRIDOR_Y + 18;
-        const tY = tp.cy < CORRIDOR_Y ? CORRIDOR_Y - 18 : CORRIDOR_Y + 18;
-        if(fY === tY) {
-          const fX = fp.cx < CORRIDOR_X ? CORRIDOR_X - 18 : CORRIDOR_X + 18;
-          const tX = tp.cx < CORRIDOR_X ? CORRIDOR_X - 18 : CORRIDOR_X + 18;
-          pathD = 'M'+fp.cx+','+fp.cy
-                +' L'+fX+','+fp.cy
-                +' L'+tX+','+tp.cy
-                +' L'+tp.cx+','+tp.cy;
-        } else {
-          pathD = 'M'+fp.cx+','+fp.cy
-                +' L'+fp.cx+','+fY
-                +' L'+tp.cx+','+fY
-                +' L'+tp.cx+','+tp.cy;
-        }
+      const pathD = findCorridorRoute(fp, tp);
+      if(pathD) {
+        routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>';
+        routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="4" fill="#E24B4A"/>';
       }
-      routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>';
-      routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="4" fill="#E24B4A"/>';
     });
 
     // 現在地マーカー（最前面）
