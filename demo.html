@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>総合展2026 AIガイド</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
@@ -138,6 +138,7 @@ const SESSION_ID = 'S' + Date.now().toString(36).toUpperCase();
 // 商品データ（GASから取得 or フォールバック）
 let P = [];
 let SEMINARS = [];
+let VENUE_SVG_INNER = '';  // venue_map.svgの中身（fetchで取得）
 
 // ============================================================
 // 起動時：GASからデータ取得
@@ -148,6 +149,19 @@ window.addEventListener('load', async () => {
   SEMINARS = SAMPLE_SEMINARS;
   initFuse();
   showHome();
+
+  // 会場SVG読込（同ディレクトリのvenue_map.svg）
+  fetch('venue_map.svg')
+    .then(r => r.ok ? r.text() : '')
+    .then(svgText => {
+      // <svg ...>と</svg>の間を抽出
+      const m = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
+      if(m) {
+        VENUE_SVG_INNER = m[1];
+        console.log('✅ 会場SVG読込完了');
+      }
+    })
+    .catch(e => console.warn('会場SVG読込失敗:', e.message));
 
   // バックグラウンドでGASからデータ取得（5秒タイムアウト）
   try {
@@ -339,6 +353,8 @@ function showLoading() {
 
 // 現在の検索結果を保持（MAP画面から戻るため）
 let _lastResults = [], _lastLabel = '', _lastBoothIds = [];
+let _currentFocus = null;  // MAP画面でフォーカス中のブース（個別選択時）
+let _mapZoom = 1;           // MAP拡大率
 
 function showResults(results, label) {
   _lastResults = results;
@@ -390,6 +406,8 @@ function showResults(results, label) {
 
 // MAP専用スクリーン
 function showMapScreen(focusBooth) {
+  _currentFocus = focusBooth || null;  // ★ フォーカスを保持
+  _mapZoom = 1;
   const highlightIds = focusBooth ? [focusBooth] : _lastBoothIds;
   const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
 
@@ -400,16 +418,21 @@ function showMapScreen(focusBooth) {
       <div class="res-q">${focusBooth ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'') : _lastLabel}</div>
       <div class="res-cnt">${highlightIds.length}件</div>
     </div>
-    <div style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#f5f5f3;padding:8px">
-      <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden">
+    <div style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#f5f5f3;padding:8px;position:relative">
+      <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;transform-origin:top left;transition:transform .15s">
         ${buildMapSVG(highlightIds, focusPos)}
+      </div>
+      <div style="position:fixed;bottom:90px;right:18px;display:flex;flex-direction:column;gap:6px;z-index:20">
+        <button onclick="mapZoom(1.4)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
+        <button onclick="mapZoom(1/1.4)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">−</button>
+        <button onclick="mapZoom(0)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:14px;font-weight:700;color:#0F6E56;cursor:pointer">⛶</button>
       </div>
     </div>
     <div style="padding:10px 16px;background:#fff;border-top:1px solid #e8e7e1;flex-shrink:0">
       <div style="font-size:12px;color:#73726c;margin-bottom:6px">現在地のブース番号を入力 → 経路を表示</div>
       <div style="display:flex;gap:8px">
         <input id="curLocInput" placeholder="例: A01, B15..." 
-          style="flex:1;padding:10px 14px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:15px;outline:none"
+          style="flex:1;padding:10px 14px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:15px;outline:none;text-transform:uppercase"
           onkeydown="if(event.key==='Enter')showRoute()">
         <button onclick="showRoute()" 
           style="padding:10px 16px;background:#0F6E56;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
@@ -418,6 +441,19 @@ function showMapScreen(focusBooth) {
       </div>
     </div>
   </div>`;
+}
+
+// ズーム制御
+function mapZoom(factor) {
+  const wrap = document.getElementById('map-svg-wrap');
+  if(!wrap) return;
+  if(factor === 0) {
+    _mapZoom = 1;
+  } else {
+    _mapZoom = Math.max(0.5, Math.min(4, _mapZoom * factor));
+  }
+  wrap.style.transform = 'scale(' + _mapZoom + ')';
+  wrap.style.width = (100 / _mapZoom) + '%';
 }
 
 // 経路表示
@@ -431,9 +467,9 @@ function showRoute() {
     return;
   }
   fromInput.style.borderColor = '#0F6E56';
-  const focusBooth = _lastBoothIds.length === 1 ? _lastBoothIds[0] : null;
-  const highlightIds = focusBooth ? [focusBooth] : _lastBoothIds;
-  const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
+  // ★ _currentFocus を優先（個別ブースなら1件のみに線を引く）
+  const highlightIds = _currentFocus ? [_currentFocus] : _lastBoothIds;
+  const focusPos = _currentFocus ? BOOTH_COORDS[_currentFocus] : null;
   const wrap = document.getElementById('map-svg-wrap');
   if(wrap) wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth);
 }
@@ -450,25 +486,24 @@ const MAP_BG = {"A": "#FAEEDA", "B": "#E6F1FB", "C": "#E1F5EE", "D": "#FBEAF0"};
 const SVG_INNER = ''; // loaded via fetch
 
 function buildMapSVG(highlightIds, focusPos, fromBooth) {
-  // ブース位置の全背景（薄いドット）
-  let bgDots = '';
-  Object.entries(BOOTH_COORDS).forEach(function(e) {
-    const bid = e[0], pos = e[1];
-    bgDots += '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="3.5" fill="#e8e7e1"/>';
-  });
+  // ── 会場レイアウト（venue_map.svgの中身を背景に） ──
+  // 読み込み済みならそれを使う、未読込なら最低限の外枠だけ
+  const venueLayer = VENUE_SVG_INNER
+    ? '<g opacity="0.7">' + VENUE_SVG_INNER + '</g>'
+    : '<rect x="2" y="2" width="557" height="730" fill="none" stroke="#999" stroke-width="1.5" rx="4"/>';
 
-  // 施設ラベル
+  // ── 施設ラベル ──
   let facLayer = '';
   Object.entries(FACILITY_COORDS).forEach(function(entry) {
     const name = entry[0], fac = entry[1];
-    const tw = name.length * 5.5 + 10;
+    const tw = name.length * 5.5 + 14;
     facLayer += '<g>'
-      + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-8)+'" width="'+tw+'" height="12" rx="3" fill="#333" opacity="0.8"/>'
-      + '<text x="'+fac.cx+'" y="'+(fac.cy+2)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
+      + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-7)+'" width="'+tw+'" height="13" rx="3" fill="#0F6E56" opacity="0.92"/>'
+      + '<text x="'+fac.cx+'" y="'+(fac.cy+2.5)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
       + '</g>';
   });
 
-  // ハイライトブース
+  // ── ハイライトブース ──
   let hlLayer = '';
   (highlightIds||[]).forEach(function(bid) {
     const pos = BOOTH_COORDS[bid];
@@ -476,59 +511,65 @@ function buildMapSVG(highlightIds, focusPos, fromBooth) {
     const s = bid[0];
     const c = MAP_COLORS[s]||'#854F0B', b = MAP_BG[s]||'#FAEEDA';
     hlLayer += '<g>'
-      + '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="12" fill="'+b+'" stroke="'+c+'" stroke-width="2.5"/>'
-      + '<text x="'+pos.cx+'" y="'+(pos.cy-2)+'" text-anchor="middle" font-size="5" fill="'+c+'" font-weight="700" font-family="sans-serif">'+bid+'</text>'
+      + '<circle cx="'+pos.cx+'" cy="'+pos.cy+'" r="13" fill="'+b+'" stroke="'+c+'" stroke-width="2.5" opacity="0.95"/>'
+      + '<text x="'+pos.cx+'" y="'+(pos.cy+1.5)+'" text-anchor="middle" font-size="5.5" fill="'+c+'" font-weight="800" font-family="sans-serif">'+bid+'</text>'
       + '</g>';
   });
 
-  // セクションラベル
-  const secLabels =
-    '<text x="420" y="395" font-size="60" fill="#f5f5f3" font-weight="900" font-family="sans-serif" opacity="0.6">A</text>'
-  + '<text x="130" y="395" font-size="60" fill="#f0f9ff" font-weight="900" font-family="sans-serif" opacity="0.6">B</text>'
-  + '<text x="420" y="195" font-size="60" fill="#f0fff4" font-weight="900" font-family="sans-serif" opacity="0.6">C</text>'
-  + '<text x="130" y="195" font-size="60" fill="#fff0f9" font-weight="900" font-family="sans-serif" opacity="0.6">D</text>';
-
-  // 現在地マーカー＆経路線
+  // ── 経路（通路を経由するコの字ルート）──
   let routeLayer = '';
   if(fromBooth && BOOTH_COORDS[fromBooth]) {
     const fp = BOOTH_COORDS[fromBooth];
-    // 現在地マーカー（青い星）
-    routeLayer += '<g>'
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="14" fill="#185FA5" opacity="0.2"/>'
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="9" fill="#185FA5"/>'
-      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">現在地</text>'
-      + '</g>';
-    // 目的地への経路線
+    const CORRIDOR_Y = 370;  // 中央横通路
+    const CORRIDOR_X = 280;  // 中央縦通路
+
     (highlightIds||[]).forEach(function(bid) {
       if(bid === fromBooth) return;
       const tp = BOOTH_COORDS[bid];
       if(!tp) return;
-      // L字型ルート（通路経由）
-      const MX = 280, MY = 370;
+
+      const fs = fromBooth[0], ts = bid[0];
       let pathD;
-      // 同じ象限なら直線、違う象限なら通路を経由
-      const sameH = (fp.cx > MX) === (tp.cx > MX);
-      const sameV = (fp.cy > MY) === (tp.cy > MY);
-      if(sameH && sameV) {
-        pathD = 'M'+fp.cx+','+fp.cy+' L'+tp.cx+','+tp.cy;
-      } else if(sameH) {
-        pathD = 'M'+fp.cx+','+fp.cy+' L'+fp.cx+','+MY+' L'+tp.cx+','+MY+' L'+tp.cx+','+tp.cy;
-      } else if(sameV) {
-        pathD = 'M'+fp.cx+','+fp.cy+' L'+MX+','+fp.cy+' L'+MX+','+tp.cy+' L'+tp.cx+','+tp.cy;
+
+      if(fs === ts) {
+        // 同セクション内 → 中間yで折れるコの字経路
+        const midY = Math.round((fp.cy + tp.cy) / 2);
+        pathD = 'M'+fp.cx+','+fp.cy
+              +' L'+fp.cx+','+midY
+              +' L'+tp.cx+','+midY
+              +' L'+tp.cx+','+tp.cy;
       } else {
-        pathD = 'M'+fp.cx+','+fp.cy+' L'+MX+','+fp.cy+' L'+MX+','+MY+' L'+tp.cx+','+MY+' L'+tp.cx+','+tp.cy;
+        // 異セクション → 中央十字通路を経由
+        const fY = fp.cy < CORRIDOR_Y ? CORRIDOR_Y - 18 : CORRIDOR_Y + 18;
+        const tY = tp.cy < CORRIDOR_Y ? CORRIDOR_Y - 18 : CORRIDOR_Y + 18;
+        if(fY === tY) {
+          const fX = fp.cx < CORRIDOR_X ? CORRIDOR_X - 18 : CORRIDOR_X + 18;
+          const tX = tp.cx < CORRIDOR_X ? CORRIDOR_X - 18 : CORRIDOR_X + 18;
+          pathD = 'M'+fp.cx+','+fp.cy
+                +' L'+fX+','+fp.cy
+                +' L'+tX+','+tp.cy
+                +' L'+tp.cx+','+tp.cy;
+        } else {
+          pathD = 'M'+fp.cx+','+fp.cy
+                +' L'+fp.cx+','+fY
+                +' L'+tp.cx+','+fY
+                +' L'+tp.cx+','+tp.cy;
+        }
       }
-      routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.9"/>';
-      // 矢印（終点近く）
-      routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="5" fill="#E24B4A"/>';
+      routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>';
+      routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="4" fill="#E24B4A"/>';
     });
+
+    // 現在地マーカー（最前面）
+    routeLayer += '<g>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="16" fill="#185FA5" opacity="0.25"/>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="11" fill="#185FA5"/>'
+      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">現在地</text>'
+      + '</g>';
   }
 
   return '<svg viewBox="0 0 561 734" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fafaf8">'
-    + '<line x1="280" y1="0" x2="280" y2="734" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
-    + '<line x1="0" y1="370" x2="561" y2="370" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
-    + secLabels
-    + '<g>' + bgDots + '</g>'
+    + venueLayer
     + '<g>' + facLayer + '</g>'
     + '<g>' + routeLayer + '</g>'
     + '<g>' + hlLayer + '</g>'
