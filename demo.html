@@ -171,32 +171,6 @@ window.addEventListener('load', async () => {
   } catch (e) {
     console.warn('GAS未接続。サンプルデータで動作中。', e.message);
   }
-  // MAP: venue_map.svg を非同期ロード
-
-  // バックグラウンドでGASからデータ取得（5秒タイムアウト）
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
-
-    const [prodRes, semRes] = await Promise.all([
-      fetch(GAS_URL + '?action=products', {signal: ctrl.signal}),
-      fetch(GAS_URL + '?action=seminar',  {signal: ctrl.signal}),
-    ]);
-    clearTimeout(timer);
-
-    const prodData = await prodRes.json();
-    const semData  = await semRes.json();
-
-    if (prodData.products && prodData.products.length > 0) {
-      P = prodData.products;
-      console.log('✅ GASデータ取得完了: ' + P.length + '社');
-    }
-    if (semData.seminars && semData.seminars.length > 0) {
-      SEMINARS = semData.seminars;
-    }
-  } catch (e) {
-    console.warn('GAS未接続。サンプルデータで動作中。', e.message);
-  }
 });
 
 // ============================================================
@@ -378,7 +352,7 @@ function showResults(results, label) {
       ? `<button class="map-jump-btn" onclick="showMapScreen('${r.booth}')">📍地図</button>`
       : '';
     cards += `<div class="rc">
-      <div class="rc-booth rc-booth-btn" onclick="showMapScreen('${r.booth}')" style="${hasCoord?'cursor:pointer':''}}">
+      <div class="rc-booth rc-booth-btn" onclick="showMapScreen('${r.booth}')" style="${hasCoord?'cursor:pointer':''}">
         <div class="rc-bnum">${r.booth}</div><div class="rc-blbl">ブース</div>
       </div>
       <div style="flex:1"><div class="rc-co">${r.company}</div>
@@ -462,7 +436,6 @@ function showRoute() {
   const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
   const wrap = document.getElementById('map-svg-wrap');
   if(wrap) wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth);
-}
 }
 
 // ============================================================
