@@ -8,9 +8,9 @@
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#f5f5f3}
+html,body{height:100%;height:100dvh;background:#f5f5f3}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;display:flex;justify-content:center}
-.app{width:100%;max-width:430px;background:#fff;min-height:100vh;display:flex;flex-direction:column}
+.app{width:100%;max-width:430px;background:#fff;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .hdr{padding:14px 16px 12px;background:#0F6E56;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .hdr .ttl{font-size:15px;font-weight:600;color:#fff}
 .hdr .sub{font-size:10px;color:rgba(255,255,255,.75);margin-top:2px}
@@ -153,7 +153,7 @@ const H_CORRIDORS = [
 ];
 const V_CORRIDORS = [
   {"x":450,"y1":88,"y2":365},{"x":524,"y1":88,"y2":365},{"x":282,"y1":89,"y2":367},
-  {"x":282,"y1":367,"y2":721},{"x":127,"y1":676,"y2":722},{"x":14,"y1":675,"y2":723},
+  {"x":282,"y1":367,"y2":723},{"x":127,"y1":676,"y2":722},{"x":14,"y1":675,"y2":723},
   {"x":39,"y1":492,"y2":674},{"x":108,"y1":364,"y2":675},{"x":452,"y1":365,"y2":525},
   {"x":474,"y1":526,"y2":723},{"x":528,"y1":365,"y2":642},{"x":118,"y1":90,"y2":266},
   {"x":120,"y1":268,"y2":367},{"x":41,"y1":88,"y2":365}
@@ -658,27 +658,27 @@ function showMapScreen(focusBooth) {
   const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
 
   document.getElementById('screen').innerHTML = `
-  <div class="screen" style="display:flex;flex-direction:column;height:100%">
+  <div class="screen" style="display:flex;flex-direction:column;height:100%;position:relative">
     <div class="res-hdr" style="flex-shrink:0">
       <button class="back-btn" onclick="showResults(_lastResults,_lastLabel)"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">${focusBooth ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'') : _lastLabel}</div>
       <div class="res-cnt">${highlightIds.length}件</div>
     </div>
-    <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px;position:relative">
+    <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px 8px 90px 8px;position:relative">
       <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;width:100%;height:100%;touch-action:none;cursor:grab">
         ${buildMapSVG(highlightIds, focusPos)}
       </div>
-      <div style="position:absolute;bottom:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
+      <div style="position:absolute;bottom:100px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
         <button onclick="mapZoomVB(1/1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
         <button onclick="mapZoomVB(1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">−</button>
         <button onclick="mapResetVB()" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;font-weight:700;color:#0F6E56;cursor:pointer">⛶</button>
       </div>
     </div>
-    <div style="padding:10px 16px;background:#fff;border-top:1px solid #e8e7e1;flex-shrink:0">
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom)) 16px;background:#fff;border-top:1px solid #e8e7e1;z-index:30;box-shadow:0 -2px 8px rgba(0,0,0,.06)">
       <div style="font-size:12px;color:#73726c;margin-bottom:6px">現在地のブース番号を入力 → 経路を表示</div>
       <div style="display:flex;gap:8px">
         <input id="curLocInput" placeholder="例: A01, B15..." 
-          style="flex:1;padding:10px 14px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:15px;outline:none;text-transform:uppercase"
+          style="flex:1;padding:10px 14px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:16px;outline:none;text-transform:uppercase"
           onkeydown="if(event.key==='Enter')showRoute()">
         <button onclick="showRoute()" 
           style="padding:10px 16px;background:#0F6E56;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
