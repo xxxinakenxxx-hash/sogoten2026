@@ -211,31 +211,48 @@ function buildCorridorGraph() {
       prev = id;
     });
   });
+
+  // 近接ノード自動接続（通路端点の僅かなズレを吸収。例:x=282/y2=721 と y=723通路）
+  const TOL = 6;
+  for(let i=0; i<nodes.length; i++) {
+    for(let j=i+1; j<nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const d = Math.hypot(dx, dy);
+      if(d > 0 && d <= TOL) {
+        edges.push({a:i, b:j, d:d});
+      }
+    }
+  }
   return {nodes:nodes, edges:edges};
 }
 
-// ============================================================
-// ブース座標から最寄り通路点を見つけ、グラフに挿入
-// ============================================================
-function nearestCorridorPoint(bx, by) {
-  let best = null, bestD = Infinity;
+// ブース座標から最寄り通路点の候補リストを返す（上位n個）
+function nearestCorridorPoints(bx, by, n) {
+  n = n || 5;
+  const cands = [];
   H_CORRIDORS.forEach(function(h, i) {
     let px;
     if(bx < h.x1) px = h.x1;
     else if(bx > h.x2) px = h.x2;
     else px = bx;
-    const d = Math.hypot(bx - px, by - h.y);
-    if(d < bestD) { bestD = d; best = {x:px, y:h.y, type:'h', idx:i}; }
+    cands.push({x:px, y:h.y, type:'h', idx:i, dist:Math.hypot(bx-px, by-h.y)});
   });
   V_CORRIDORS.forEach(function(v, i) {
     let py;
     if(by < v.y1) py = v.y1;
     else if(by > v.y2) py = v.y2;
     else py = by;
-    const d = Math.hypot(bx - v.x, by - py);
-    if(d < bestD) { bestD = d; best = {x:v.x, y:py, type:'v', idx:i}; }
+    cands.push({x:v.x, y:py, type:'v', idx:i, dist:Math.hypot(bx-v.x, by-py)});
   });
-  return best;
+  cands.sort(function(a,b){ return a.dist - b.dist; });
+  return cands.slice(0, n);
+}
+
+// 旧nearestCorridorPoint（残しておく：互換用）
+function nearestCorridorPoint(bx, by) {
+  const list = nearestCorridorPoints(bx, by, 1);
+  return list[0];
 }
 
 // エントリーポイントをグラフに追加し、そのノードIDを返す
@@ -301,24 +318,42 @@ function dijkstra(graph, start, end) {
   return path;
 }
 
-// 経路探索メイン：from/to のブース座標から、SVG path文字列を返す
+// 経路探索メイン：複数のエントリーポイント候補を試して最短を採用
 function findCorridorRoute(from, to) {
   if(!CORRIDOR_GRAPH) return null;
-  // グラフを毎回コピー（エントリーノードを追加するため）
-  const g = {
-    nodes: CORRIDOR_GRAPH.nodes.map(function(n){return {x:n.x, y:n.y};}),
-    edges: CORRIDOR_GRAPH.edges.slice()
-  };
-  const fromEntry = nearestCorridorPoint(from.cx, from.cy);
-  const toEntry = nearestCorridorPoint(to.cx, to.cy);
-  if(!fromEntry || !toEntry) return null;
-  const fromId = insertEntryNode(g, fromEntry);
-  const toId = insertEntryNode(g, toEntry);
-  const path = dijkstra(g, fromId, toId);
-  if(path.length === 0) return null;
-  // SVG path 構築：ブース→エントリー→...→エントリー→ブース
+  const fromCands = nearestCorridorPoints(from.cx, from.cy, 4);
+  const toCands = nearestCorridorPoints(to.cx, to.cy, 4);
+  if(fromCands.length === 0 || toCands.length === 0) return null;
+
+  let best = null, bestLen = Infinity;
+  for(let fi=0; fi<fromCands.length; fi++) {
+    for(let ti=0; ti<toCands.length; ti++) {
+      const fe = fromCands[fi], te = toCands[ti];
+      // グラフをコピー（エントリーノード追加用）
+      const g = {
+        nodes: CORRIDOR_GRAPH.nodes.map(function(n){return {x:n.x, y:n.y};}),
+        edges: CORRIDOR_GRAPH.edges.slice()
+      };
+      const fId = insertEntryNode(g, fe);
+      const tId = insertEntryNode(g, te);
+      const path = dijkstra(g, fId, tId);
+      if(path.length === 0) continue;
+      // ルート総距離 = ブース→fe + 通路距離 + te→ブース
+      let total = fe.dist + te.dist;
+      for(let i=1; i<path.length; i++) {
+        const a = g.nodes[path[i-1]], b = g.nodes[path[i]];
+        total += Math.hypot(a.x-b.x, a.y-b.y);
+      }
+      if(total < bestLen) {
+        bestLen = total;
+        best = { path:path, g:g };
+      }
+    }
+  }
+  if(!best) return null;
+
   const points = [{x:from.cx, y:from.cy}];
-  path.forEach(function(id) { points.push(g.nodes[id]); });
+  best.path.forEach(function(id) { points.push(best.g.nodes[id]); });
   points.push({x:to.cx, y:to.cy});
   // 連続する同座標を除去
   const clean = [points[0]];
@@ -335,20 +370,22 @@ let _mapView = { x: 0, y: 0, w: 561, h: 734 };
 // 起動時：GASからデータ取得
 // ============================================================
 window.addEventListener('load', async () => {
-  // まずサンプルデータで即表示してから、GASデータを取得
-  P = SAMPLE_P;
-  SEMINARS = SAMPLE_SEMINARS;
-  initFuse();
-  // 通路グラフ構築
+  // 通路グラフ構築（即時）
   CORRIDOR_GRAPH = buildCorridorGraph();
   console.log('✅ 通路グラフ構築: ノード'+CORRIDOR_GRAPH.nodes.length+'個, エッジ'+CORRIDOR_GRAPH.edges.length+'本');
-  showHome();
 
-  // 会場SVG読込（同ディレクトリのvenue_map.svg）
-  fetch('venue_map.svg')
+  // ローディング表示
+  document.getElementById('screen').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;background:#fafaf8">
+      <div style="width:50px;height:50px;border:4px solid #e8e7e1;border-top-color:#0F6E56;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px"></div>
+      <div style="color:#73726c;font-size:14px">出展社データを読み込み中…</div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </div>`;
+
+  // 会場SVG読込（並行）
+  const svgPromise = fetch('venue_map.svg')
     .then(r => r.ok ? r.text() : '')
     .then(svgText => {
-      // <svg ...>と</svg>の間を抽出
       const m = svgText.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
       if(m) {
         VENUE_SVG_INNER = m[1];
@@ -357,10 +394,11 @@ window.addEventListener('load', async () => {
     })
     .catch(e => console.warn('会場SVG読込失敗:', e.message));
 
-  // バックグラウンドでGASからデータ取得（5秒タイムアウト）
+  // GASからデータ取得（完了を待つ・10秒タイムアウト）
+  let gasOK = false;
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const timer = setTimeout(() => ctrl.abort(), 10000);
     const [prodRes, semRes] = await Promise.all([
       fetch(GAS_URL + '?action=products', {signal: ctrl.signal}),
       fetch(GAS_URL + '?action=seminar',  {signal: ctrl.signal}),
@@ -370,15 +408,28 @@ window.addEventListener('load', async () => {
     const semData  = await semRes.json();
     if (prodData.products && prodData.products.length > 0) {
       P = prodData.products;
-      initFuse();
+      gasOK = true;
       console.log('✅ GASデータ取得完了: ' + P.length + '社');
     }
     if (semData.seminars && semData.seminars.length > 0) {
       SEMINARS = semData.seminars;
     }
   } catch (e) {
-    console.warn('GAS未接続。サンプルデータで動作中。', e.message);
+    console.warn('GAS未接続。サンプルデータで動作。', e.message);
   }
+
+  // GAS失敗時のみフォールバック
+  if(!gasOK) {
+    P = SAMPLE_P;
+    SEMINARS = SAMPLE_SEMINARS;
+  }
+
+  // SVG読込も待つ
+  await svgPromise;
+
+  // Fuse.js初期化＆ホーム表示
+  initFuse();
+  showHome();
 });
 
 // ============================================================
