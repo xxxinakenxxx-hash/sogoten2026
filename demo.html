@@ -318,48 +318,54 @@ function dijkstra(graph, start, end) {
   return path;
 }
 
-// 経路探索メイン：複数のエントリーポイント候補を試して最短を採用
+// 経路探索メイン：ブースから「最寄りの通路」に直角に出て、そこから通路グラフで最短探索
 function findCorridorRoute(from, to) {
   if(!CORRIDOR_GRAPH) return null;
-  const fromCands = nearestCorridorPoints(from.cx, from.cy, 4);
-  const toCands = nearestCorridorPoints(to.cx, to.cy, 4);
-  if(fromCands.length === 0 || toCands.length === 0) return null;
+  // それぞれ最寄りの通路点（1点のみ）→ ブース→通路を必ず通る
+  const fEntry = nearestCorridorPoint(from.cx, from.cy);
+  const tEntry = nearestCorridorPoint(to.cx, to.cy);
+  if(!fEntry || !tEntry) return null;
 
-  let best = null, bestLen = Infinity;
-  for(let fi=0; fi<fromCands.length; fi++) {
-    for(let ti=0; ti<toCands.length; ti++) {
-      const fe = fromCands[fi], te = toCands[ti];
-      // グラフをコピー（エントリーノード追加用）
-      const g = {
-        nodes: CORRIDOR_GRAPH.nodes.map(function(n){return {x:n.x, y:n.y};}),
-        edges: CORRIDOR_GRAPH.edges.slice()
-      };
-      const fId = insertEntryNode(g, fe);
-      const tId = insertEntryNode(g, te);
-      const path = dijkstra(g, fId, tId);
-      if(path.length === 0) continue;
-      // ルート総距離 = ブース→fe + 通路距離 + te→ブース
-      let total = fe.dist + te.dist;
-      for(let i=1; i<path.length; i++) {
-        const a = g.nodes[path[i-1]], b = g.nodes[path[i]];
-        total += Math.hypot(a.x-b.x, a.y-b.y);
-      }
-      if(total < bestLen) {
-        bestLen = total;
-        best = { path:path, g:g };
-      }
+  // グラフをコピー（エントリーノード追加用）
+  const g = {
+    nodes: CORRIDOR_GRAPH.nodes.map(function(n){return {x:n.x, y:n.y};}),
+    edges: CORRIDOR_GRAPH.edges.slice()
+  };
+  const fId = insertEntryNode(g, fEntry);
+  const tId = insertEntryNode(g, tEntry);
+  const path = dijkstra(g, fId, tId);
+  if(path.length === 0) return null;
+
+  // ブース→通路点を「直角」にする（斜め線でブース壁を貫通するのを防ぐ）
+  function rectifyEntry(boothXY, entry) {
+    if(Math.abs(boothXY.x - entry.x) < 0.5 || Math.abs(boothXY.y - entry.y) < 0.5) {
+      return [boothXY, {x:entry.x, y:entry.y}];
+    }
+    if(entry.type === 'h') {
+      return [boothXY, {x:boothXY.x, y:entry.y}, {x:entry.x, y:entry.y}];
+    } else {
+      return [boothXY, {x:entry.x, y:boothXY.y}, {x:entry.x, y:entry.y}];
     }
   }
-  if(!best) return null;
+  const fromPart = rectifyEntry({x:from.cx, y:from.cy}, fEntry);
+  const toPart = rectifyEntry({x:to.cx, y:to.cy}, tEntry).slice().reverse();
+  const midPath = path.map(function(id){ return g.nodes[id]; });
 
-  const points = [{x:from.cx, y:from.cy}];
-  best.path.forEach(function(id) { points.push(best.g.nodes[id]); });
-  points.push({x:to.cx, y:to.cy});
+  let points = [].concat(fromPart, midPath, toPart);
   // 連続する同座標を除去
   const clean = [points[0]];
   for(let i=1; i<points.length; i++) {
     const p = points[i], last = clean[clean.length-1];
     if(Math.abs(p.x-last.x)>0.5 || Math.abs(p.y-last.y)>0.5) clean.push(p);
+  }
+  // 経路の両端をブース円の手前(11px)で止める
+  if(clean.length >= 2) {
+    const p0 = clean[0], p1 = clean[1];
+    const dx = p1.x - p0.x, dy = p1.y - p0.y, len = Math.hypot(dx, dy);
+    if(len > 14) clean[0] = { x: p0.x + dx/len*11, y: p0.y + dy/len*11 };
+    const pN = clean[clean.length-1], pN1 = clean[clean.length-2];
+    const dx2 = pN1.x - pN.x, dy2 = pN1.y - pN.y, len2 = Math.hypot(dx2, dy2);
+    if(len2 > 14) clean[clean.length-1] = { x: pN.x + dx2/len2*11, y: pN.y + dy2/len2*11 };
   }
   return 'M' + clean.map(function(p){return p.x+','+p.y;}).join(' L');
 }
@@ -885,7 +891,7 @@ function buildMapSVG(highlightIds, focusPos, fromBooth) {
       + '</g>';
   }
 
-  return '<svg viewBox="0 0 561 734" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fafaf8">'
+  return '<svg viewBox="0 0 561 734" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;background:#fafaf8">'
     + venueLayer
     + '<g>' + facLayer + '</g>'
     + '<g>' + routeLayer + '</g>'
