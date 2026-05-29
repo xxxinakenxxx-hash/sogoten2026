@@ -73,6 +73,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .rc-prod{font-size:13px;color:#73726c;margin-top:5px;line-height:1.4}
 .map-sec{margin:0 16px 16px;border:1px solid #e8e7e1;border-radius:14px;overflow:hidden}
 .map-hdr{padding:9px 13px;border-bottom:1px solid #e8e7e1;font-size:12px;color:#73726c;display:flex;align-items:center;gap:5px;background:#f9f9f7}
+.map-jump-btn{padding:5px 10px;background:#E1F5EE;color:#0F6E56;border:1px solid #0F6E56;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.map-all-btn{display:block;width:calc(100% - 32px);margin:0 16px 16px;padding:13px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;text-align:center}
+.map-all-btn:active{opacity:.85}
+.rc{background:#fff;border:1px solid #e8e7e1;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px}
 .no-res{padding:48px 16px;text-align:center}
 .no-res i{font-size:44px;color:#b4b2a9}
 .no-res h3{font-size:19px;font-weight:600;color:#1a1a18;margin:14px 0 7px}
@@ -359,23 +363,35 @@ function showLoading() {
   </div>`;
 }
 
+// 現在の検索結果を保持（MAP画面から戻るため）
+let _lastResults = [], _lastLabel = '', _lastBoothIds = [];
+
 function showResults(results, label) {
+  _lastResults = results;
+  _lastLabel = label;
+  _lastBoothIds = results.map(r => r.booth).filter(b => BOOTH_COORDS[b]);
+
   let cards = '';
   results.forEach(r => {
+    const hasCoord = BOOTH_COORDS[r.booth] ? true : false;
+    const mapBtn = hasCoord
+      ? `<button class="map-jump-btn" onclick="showMapScreen('${r.booth}')">📍地図</button>`
+      : '';
     cards += `<div class="rc">
-      <div class="rc-booth"><div class="rc-bnum">${r.booth}</div><div class="rc-blbl">ブース</div></div>
-      <div><div class="rc-co">${r.company}</div><div class="rc-prod">${r.matchedTags ? r.matchedTags.slice(0,3).join('・') : ''}</div></div>
+      <div class="rc-booth rc-booth-btn" onclick="showMapScreen('${r.booth}')" style="${hasCoord?'cursor:pointer':''}}">
+        <div class="rc-bnum">${r.booth}</div><div class="rc-blbl">ブース</div>
+      </div>
+      <div style="flex:1"><div class="rc-co">${r.company}</div>
+        <div class="rc-prod">${r.matchedTags ? r.matchedTags.slice(0,3).join('・') : ''}</div>
+      </div>
+      ${mapBtn}
     </div>`;
   });
 
-  const boothIds = results.map(r => r.booth).filter(b => BOOTH_COORDS[b]);
-  const mapHtml = boothIds.length ? `
-    <div class="map-sec">
-      <div class="map-hdr"><i class="ti ti-map-pin"></i> 会場MAP — 該当ブースをハイライト</div>
-      <div style="overflow:auto;-webkit-overflow-scrolling:touch">
-        ${buildMapSVG(boothIds)}
-      </div>
-    </div>` : '';
+  const mapBtn2 = _lastBoothIds.length ? `
+    <button class="map-all-btn" onclick="showMapScreen()">
+      <i class="ti ti-map"></i> MAPで全件表示（${_lastBoothIds.length}件）
+    </button>` : '';
 
   const noRes = !results.length ? `
     <div class="no-res">
@@ -393,9 +409,60 @@ function showResults(results, label) {
     </div>
     ${results.length ? `<div class="res-msg">「${label}」に関連するブースが${results.length}件見つかりました</div>` : ''}
     <div class="rcards">${cards}</div>
-    ${mapHtml}
+    ${mapBtn2}
     ${noRes}
   </div>`;
+}
+
+// MAP専用スクリーン
+function showMapScreen(focusBooth) {
+  const highlightIds = focusBooth ? [focusBooth] : _lastBoothIds;
+  const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen" style="display:flex;flex-direction:column;height:100%">
+    <div class="res-hdr" style="flex-shrink:0">
+      <button class="back-btn" onclick="showResults(_lastResults,_lastLabel)"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">${focusBooth ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'') : _lastLabel}</div>
+      <div class="res-cnt">${highlightIds.length}件</div>
+    </div>
+    <div style="flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#f5f5f3;padding:8px">
+      <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden">
+        ${buildMapSVG(highlightIds, focusPos)}
+      </div>
+    </div>
+    <div style="padding:10px 16px;background:#fff;border-top:1px solid #e8e7e1;flex-shrink:0">
+      <div style="font-size:12px;color:#73726c;margin-bottom:6px">現在地のブース番号を入力 → 経路を表示</div>
+      <div style="display:flex;gap:8px">
+        <input id="curLocInput" placeholder="例: A01, B15..." 
+          style="flex:1;padding:10px 14px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:15px;outline:none"
+          onkeydown="if(event.key==='Enter')showRoute()">
+        <button onclick="showRoute()" 
+          style="padding:10px 16px;background:#0F6E56;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+          経路
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// 経路表示
+function showRoute() {
+  const fromInput = document.getElementById('curLocInput');
+  if(!fromInput) return;
+  const fromBooth = fromInput.value.trim().toUpperCase();
+  if(!fromBooth || !BOOTH_COORDS[fromBooth]) {
+    fromInput.style.borderColor = '#E24B4A';
+    setTimeout(() => fromInput.style.borderColor = '#d3d1c7', 1500);
+    return;
+  }
+  fromInput.style.borderColor = '#0F6E56';
+  const focusBooth = _lastBoothIds.length === 1 ? _lastBoothIds[0] : null;
+  const highlightIds = focusBooth ? [focusBooth] : _lastBoothIds;
+  const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
+  const wrap = document.getElementById('map-svg-wrap');
+  if(wrap) wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth);
+}
 }
 
 // ============================================================
@@ -409,7 +476,7 @@ const MAP_COLORS = {"A": "#854F0B", "B": "#185FA5", "C": "#0F6E56", "D": "#99355
 const MAP_BG = {"A": "#FAEEDA", "B": "#E6F1FB", "C": "#E1F5EE", "D": "#FBEAF0"};
 const SVG_INNER = ''; // loaded via fetch
 
-function buildMapSVG(highlightIds) {
+function buildMapSVG(highlightIds, focusPos, fromBooth) {
   // ブース位置の全背景（薄いドット）
   let bgDots = '';
   Object.entries(BOOTH_COORDS).forEach(function(e) {
@@ -448,12 +515,49 @@ function buildMapSVG(highlightIds) {
   + '<text x="420" y="195" font-size="60" fill="#f0fff4" font-weight="900" font-family="sans-serif" opacity="0.6">C</text>'
   + '<text x="130" y="195" font-size="60" fill="#fff0f9" font-weight="900" font-family="sans-serif" opacity="0.6">D</text>';
 
+  // 現在地マーカー＆経路線
+  let routeLayer = '';
+  if(fromBooth && BOOTH_COORDS[fromBooth]) {
+    const fp = BOOTH_COORDS[fromBooth];
+    // 現在地マーカー（青い星）
+    routeLayer += '<g>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="14" fill="#185FA5" opacity="0.2"/>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="9" fill="#185FA5"/>'
+      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">現在地</text>'
+      + '</g>';
+    // 目的地への経路線
+    (highlightIds||[]).forEach(function(bid) {
+      if(bid === fromBooth) return;
+      const tp = BOOTH_COORDS[bid];
+      if(!tp) return;
+      // L字型ルート（通路経由）
+      const MX = 280, MY = 370;
+      let pathD;
+      // 同じ象限なら直線、違う象限なら通路を経由
+      const sameH = (fp.cx > MX) === (tp.cx > MX);
+      const sameV = (fp.cy > MY) === (tp.cy > MY);
+      if(sameH && sameV) {
+        pathD = 'M'+fp.cx+','+fp.cy+' L'+tp.cx+','+tp.cy;
+      } else if(sameH) {
+        pathD = 'M'+fp.cx+','+fp.cy+' L'+fp.cx+','+MY+' L'+tp.cx+','+MY+' L'+tp.cx+','+tp.cy;
+      } else if(sameV) {
+        pathD = 'M'+fp.cx+','+fp.cy+' L'+MX+','+fp.cy+' L'+MX+','+tp.cy+' L'+tp.cx+','+tp.cy;
+      } else {
+        pathD = 'M'+fp.cx+','+fp.cy+' L'+MX+','+fp.cy+' L'+MX+','+MY+' L'+tp.cx+','+MY+' L'+tp.cx+','+tp.cy;
+      }
+      routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.9"/>';
+      // 矢印（終点近く）
+      routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="5" fill="#E24B4A"/>';
+    });
+  }
+
   return '<svg viewBox="0 0 561 734" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;background:#fafaf8">'
     + '<line x1="280" y1="0" x2="280" y2="734" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
     + '<line x1="0" y1="370" x2="561" y2="370" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>'
     + secLabels
     + '<g>' + bgDots + '</g>'
     + '<g>' + facLayer + '</g>'
+    + '<g>' + routeLayer + '</g>'
     + '<g>' + hlLayer + '</g>'
     + '</svg>';
 }
