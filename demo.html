@@ -1261,9 +1261,19 @@ function demoAIResponse(msg) {
   // 出展社検索を代替
   if (P && P.length > 0) {
     const qNorm = msg.replace(/[　\s]/g,'').toLowerCase();
-    const hits = P.filter(p => (p.tags||[]).some(t => qNorm.indexOf(t.toLowerCase())>=0 || t.toLowerCase().indexOf(qNorm)>=0)).slice(0,3);
-    if (hits.length > 0) {
-      const list = hits.map(p => `• ${p.booth} ${p.company}`).join('\n');
+    // タグ先頭一致スコアで並び替えて最大5社
+    const scored = P.map(p => {
+      let score = 0;
+      (p.tags||[]).forEach((tag, idx) => {
+        const t = tag.toLowerCase();
+        if (t === qNorm)            score += 100 - idx;
+        else if (t.includes(qNorm)) score += 50 - idx;
+        else if (qNorm.includes(t) && t.length >= 2) score += 20 - idx;
+      });
+      return { p, score };
+    }).filter(s => s.score > 0).sort((a,b) => b.score - a.score);
+    if (scored.length > 0) {
+      const list = scored.slice(0,5).map(s => `• ${s.p.booth} ${s.p.company}`).join('\n');
       return `「${msg}」に関連する出展社をご案内します:\n${list}\n\n詳細はブース番号でMAPをご確認ください。`;
     }
   }
