@@ -468,6 +468,7 @@ const MAIN_CATS = [
   {icon:'ti-milk',        label:'乳製品・油脂',       sub:'クリーム・バター・油脂',     bg:'#E6F1FB',ic:'#185FA5', q:'生クリーム 乳製品 バター マーガリン ショートニング 油脂 チーズ'},
   {icon:'ti-apple',       label:'フルーツ・甘味・ナッツ', sub:'ピューレ・砂糖・蜂蜜・ナッツ', bg:'#EAF3DE',ic:'#3B6D11', q:'フルーツ ピューレ 砂糖 蜂蜜 ナッツ アーモンド メープル ドライフルーツ'},
   {icon:'ti-leaf',        label:'和素材・調味・香料',  sub:'餡・酵母・スパイス・香料',   bg:'#E1F5EE',ic:'#0F6E56', q:'あんこ 餡 和菓子 酵母 イースト スパイス 香料 フレーバー 寒天'},
+  {icon:'ti-snowflake',   label:'冷凍生地・冷凍食材',  sub:'冷凍パン生地・冷凍フルーツ・冷凍和菓子', bg:'#D7F0EE',ic:'#1A6E64', q:'冷凍 冷凍生地 冷凍食材 冷凍パン生地 冷凍ケーキ 冷凍野菜 冷凍フルーツ 冷凍肉 冷凍魚 冷凍食品 冷凍和菓子 冷凍マカロン 冷凍ドーナツ 冷凍カヌレ 冷凍クッキー 冷凍白玉 冷凍わらび餅 冷凍カスタード フローズン 冷食 半製品', excludeBusiness:['機械','包材']},
   {icon:'ti-tool',        label:'機械・設備',          sub:'品目別に選べます',           bg:'#FFF3CD',ic:'#BA7517', q:'MACHINE', isMachine:true},
   {icon:'ti-package',     label:'包材・パッケージ',    sub:'箱・袋・ラベル・リボン',     bg:'#EEEDFE',ic:'#534AB7', q:'包材 パッケージ 箱 袋 ラベル リボン 紙器 缶'},
   {icon:'ti-presentation',label:'セミナー・実演',      sub:'時間・会場・スケジュール',   bg:'#FBEAF0',ic:'#993556', q:'SEMINAR', isSeminar:true},
@@ -507,6 +508,7 @@ function showHome() {
     const cls = c.isMachine ? ' mc' : '';
     const fn  = c.isMachine  ? `showMachineMenu()`
               : c.isSeminar  ? `showSeminars()`
+              : c.excludeBusiness ? `search('${c.q}','${c.label}',${JSON.stringify(c.excludeBusiness)})`
               : `search('${c.q}','${c.label}')`;
     return `<div class="cc${cls}" onclick="${fn}">
       <div class="cc-icon" style="background:${c.bg};color:${c.ic}"><i class="ti ${c.icon}"></i></div>
@@ -914,7 +916,7 @@ function initFuse() {
   });
 }
 
-function search(q, label) {
+function search(q, label, excludeBusiness) {
   showLoading();
   searchCount++;
 
@@ -934,6 +936,9 @@ function search(q, label) {
   if (qNorm.length >= 2) matchedKws.add(qNorm);
 
   P.forEach(item => {
+    // 業種除外フィルタ（例：冷凍カテゴリで機械・包材を除外）
+    if (excludeBusiness && excludeBusiness.indexOf(item.business) >= 0) return;
+
     let score = 0;
     const matched = [];
     (item.tags || []).forEach(tag => {
@@ -957,6 +962,9 @@ function search(q, label) {
   // ── 方式2: Fuse.js ファジー検索（誤字・略語・英語対応）──
   if (fuse) {
     fuse.search(q, { limit: 20 }).forEach(r => {
+      // 業種除外フィルタ
+      if (excludeBusiness && excludeBusiness.indexOf(r.item.business) >= 0) return;
+
       const key = r.item.booth + '|' + r.item.company;
       const fs  = Math.round((1 - (r.score || 0)) * 8);
       if (resultMap.has(key)) {
