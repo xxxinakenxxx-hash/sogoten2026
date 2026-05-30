@@ -100,6 +100,86 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .init-screen{padding:80px 16px;display:flex;flex-direction:column;align-items:center;gap:16px}
 .init-logo{font-size:48px;color:#0F6E56}
 .init-txt{font-size:15px;color:#73726c}
+
+/* === メインメニュー（4メニュー） === */
+.main-menu{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:14px 16px 20px}
+.mm-card{background:#fff;border:1px solid #e8e7e1;border-radius:18px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center;position:relative;min-height:140px;justify-content:center}
+.mm-card:active{background:#f5f5f3;transform:scale(.97)}
+.mm-icon{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.mm-label{font-size:16px;font-weight:600;color:#1a1a18;display:inline-flex;align-items:center;gap:6px}
+.mm-sub{font-size:11px;color:#888780;margin-top:2px;line-height:1.4}
+.menu-badge{background:#C8453E;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;min-width:20px;text-align:center}
+
+/* === サブ画面ヘッダー === */
+.sub-hd{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}
+.back-btn{width:36px;height:36px;border-radius:50%;border:1px solid #e8e7e1;background:#fff;color:#1a1a18;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.back-btn:active{background:#f5f5f3}
+.sub-hd-ttl{font-size:18px;font-weight:600;color:#1a1a18;flex:1}
+.sub-hd-cnt{font-size:13px;font-weight:400;color:#888780;margin-left:6px}
+
+/* === マイメモ === */
+.memo-empty{padding:60px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.me-icon{font-size:64px;color:#d4d2c8}
+.me-ttl{font-size:17px;font-weight:600;color:#73726c}
+.me-msg{font-size:13px;color:#888780;line-height:1.6}
+.memo-list{padding:8px 16px}
+.ml-card{background:#fff;border:1px solid #e8e7e1;border-radius:12px;padding:14px;margin-bottom:10px;border-left:4px solid #534AB7}
+.ml-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ml-booth{background:#EEEDFE;color:#534AB7;font-weight:700;padding:4px 10px;border-radius:8px;font-size:13px}
+.ml-company{font-size:14px;font-weight:600;color:#1a1a18}
+.ml-memo{font-size:13px;color:#1a1a18;line-height:1.6;background:#f5f5f3;padding:10px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
+.ml-memo-empty{color:#888780;font-style:italic}
+.ml-actions{display:flex;gap:8px;margin-top:10px}
+.ml-btn{flex:1;background:#fff;border:1px solid #e8e7e1;color:#1a1a18;font-size:12px;padding:8px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;-webkit-tap-highlight-color:transparent}
+.ml-btn:active{background:#f5f5f3}
+.ml-btn-del{color:#C8453E;border-color:#FAECE7}
+
+.memo-mail{padding:14px 16px 30px;text-align:center}
+.mail-btn{background:#0F6E56;color:#fff;border:none;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.mail-btn:active{opacity:.85}
+.mail-note{font-size:11px;color:#888780;margin-top:8px}
+
+/* === メモ編集モーダル === */
+.memo-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.memo-modal{background:#fff;width:100%;max-width:600px;border-radius:20px 20px 0 0;padding:18px;animation:slideUp .25s ease;max-height:90vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(20px)}to{transform:translateY(0)}}
+.mm-hd{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;color:#1a1a18;margin-bottom:14px;position:relative}
+.mm-close{position:absolute;right:0;top:-4px;background:none;border:none;color:#888780;cursor:pointer;font-size:20px;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.mm-booth-info{background:#f5f5f3;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.mm-booth{background:#534AB7;color:#fff;font-weight:700;padding:4px 10px;border-radius:8px;font-size:13px}
+.mm-company{font-size:14px;font-weight:600;color:#1a1a18;flex:1}
+.mm-textarea{width:100%;border:1px solid #e8e7e1;border-radius:10px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.5}
+.mm-textarea:focus{outline:none;border-color:#534AB7}
+.mm-mic-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.mm-mic-btn{background:#fff;border:1px solid #534AB7;color:#534AB7;font-size:12px;padding:8px 14px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent}
+.mm-mic-btn.mic-on{background:#E24B4A;color:#fff;border-color:#E24B4A;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.mm-note{font-size:11px;color:#888780;flex:1;min-width:160px}
+.mm-actions{display:flex;gap:10px;margin-top:14px}
+.mm-btn{flex:1;border:none;padding:13px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mm-btn-cancel{background:#f5f5f3;color:#73726c}
+.mm-btn-save{background:#534AB7;color:#fff}
+.mm-btn-save:active{opacity:.85}
+
+/* === 検索結果カードのメモボタン === */
+.rc-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.memo-btn{background:#fff;border:1px solid #e8e7e1;color:#534AB7;font-size:11px;padding:5px 10px;border-radius:14px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}
+.memo-btn:active{background:#f5f5f3}
+.memo-btn-on{background:#534AB7;color:#fff;border-color:#534AB7}
+.memo-btn-on:active{opacity:.85}
+
+/* === AIコンシェルジュ準備中 === */
+.ai-coming{padding:50px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.ai-coming-icon{font-size:64px;color:#185FA5;background:#E6F1FB;width:100px;height:100px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ai-coming-ttl{font-size:18px;font-weight:600;color:#185FA5}
+.ai-coming-msg{font-size:13px;color:#73726c;line-height:1.6}
+.ai-coming-examples{margin-top:20px;display:flex;flex-direction:column;gap:8px;width:100%;max-width:300px}
+.aie{background:#f5f5f3;padding:10px 14px;border-radius:20px;font-size:13px;color:#73726c;text-align:left}
+
+/* === セミナーvenueボタン === */
+.venue-btn{background:#fff;border:1px solid #0F6E56;color:#0F6E56;font-size:12px;font-weight:600;padding:6px 12px;border-radius:16px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;margin-top:2px}
+.venue-btn:active{background:#E1F5EE}
 </style>
 </head>
 <body>
@@ -131,6 +211,25 @@ let listening   = false;
 let recognition = null;
 let searchCount = 0;
 let visitedBooths = [];  // アンケート用：検索でヒットしたブース履歴
+
+// マイメモ（localStorage連携）
+const MEMO_KEY = 'sogoten2026_mymemos';
+let myMemos = [];  // [{booth, company, memo, ts}]
+let currentSearchResults = null;
+let currentSearchLabel = null;
+try { myMemos = JSON.parse(localStorage.getItem(MEMO_KEY) || '[]'); } catch(e) { myMemos = []; }
+function saveMemos() { try { localStorage.setItem(MEMO_KEY, JSON.stringify(myMemos)); } catch(e){} }
+function findMemo(booth) { return myMemos.find(m => m.booth === booth); }
+function addMemo(booth, company, memo) {
+  const existing = findMemo(booth);
+  if (existing) { existing.memo = memo; existing.ts = Date.now(); }
+  else { myMemos.push({booth, company, memo: memo || '', ts: Date.now()}); }
+  saveMemos();
+}
+function deleteMemo(booth) {
+  myMemos = myMemos.filter(m => m.booth !== booth);
+  saveMemos();
+}
 
 // セッションID（1回の来場につき1つ）
 const SESSION_ID = 'S' + Date.now().toString(36).toUpperCase();
@@ -503,12 +602,48 @@ function showInit() {
 
 function showHome() {
   const t = T[lang];
-  const cats = MAIN_CATS.map(c => {
+  const memoCount = myMemos.length;
+  const memoBadge = memoCount > 0 ? `<span class="menu-badge">${memoCount}</span>` : '';
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="home-hero">
+      <h2>${t.welcome}</h2>
+      <p>${t.sub}</p>
+    </div>
+    <div class="main-menu">
+      <div class="mm-card" onclick="showBoothSearch()">
+        <div class="mm-icon" style="background:#FAEEDA;color:#854F0B"><i class="ti ti-search"></i></div>
+        <div class="mm-label">ブースを探す</div>
+        <div class="mm-sub">カテゴリ・キーワード・MAP</div>
+      </div>
+      <div class="mm-card" onclick="showAIConcierge()">
+        <div class="mm-icon" style="background:#E6F1FB;color:#185FA5"><i class="ti ti-robot"></i></div>
+        <div class="mm-label">AIコンシェルジュ</div>
+        <div class="mm-sub">業態に合わせて何でも相談</div>
+      </div>
+      <div class="mm-card" onclick="showMyMemo()">
+        <div class="mm-icon" style="background:#EEEDFE;color:#534AB7"><i class="ti ti-notebook"></i></div>
+        <div class="mm-label">マイメモ${memoBadge}</div>
+        <div class="mm-sub">気になるブースを記録</div>
+      </div>
+      <div class="mm-card" onclick="showSeminars()">
+        <div class="mm-icon" style="background:#FBEAF0;color:#993556"><i class="ti ti-presentation"></i></div>
+        <div class="mm-label">セミナー・実演</div>
+        <div class="mm-sub">時間・会場・スケジュール</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// 「ブースを探す」（旧トップのカテゴリ一覧）
+function showBoothSearch() {
+  const t = T[lang];
+  const cats = MAIN_CATS.filter(c => !c.isSeminar).map(c => {
     const arr = c.isMachine ? `<span class="cc-arr"><i class="ti ti-chevron-right"></i></span>` : '';
     const cls = c.isMachine ? ' mc' : '';
     const idx = MAIN_CATS.indexOf(c);
     const fn  = c.isMachine  ? `showMachineMenu()`
-              : c.isSeminar  ? `showSeminars()`
               : c.excludeBusiness ? `searchCat(${idx})`
               : `search('${c.q}','${c.label}')`;
     return `<div class="cc${cls}" onclick="${fn}">
@@ -520,7 +655,10 @@ function showHome() {
 
   document.getElementById('screen').innerHTML = `
   <div class="screen">
-    <div class="home-hero"><h2>${t.welcome}</h2><p>${t.sub}</p></div>
+    <div class="sub-hd">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="sub-hd-ttl">ブースを探す</div>
+    </div>
     <div class="cat-grid">${cats}</div>
     <div class="mic-area">
       <button class="mic-big" id="mic" onclick="toggleMic()"><i class="ti ti-microphone"></i></button>
@@ -532,6 +670,187 @@ function showHome() {
       <button class="snd-btn" onclick="var v=document.getElementById('qi');if(v&&v.value.trim()){search(v.value.trim(),v.value.trim());v.value=''}"><i class="ti ti-send" style="font-size:18px"></i></button>
     </div>
   </div>`;
+}
+
+// AIコンシェルジュ（モック・本実装は後日）
+function showAIConcierge() {
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="sub-hd">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="sub-hd-ttl">AIコンシェルジュ</div>
+    </div>
+    <div class="ai-coming">
+      <div class="ai-coming-icon"><i class="ti ti-robot"></i></div>
+      <div class="ai-coming-ttl">準備中</div>
+      <div class="ai-coming-msg">何でも気軽にAIに相談できる機能です。<br>本番までに公開予定。</div>
+      <div class="ai-coming-examples">
+        <div class="aie">「生クリーム探してる」</div>
+        <div class="aie">「ホシザキの場所教えて」</div>
+        <div class="aie">「セミナーは何時から？」</div>
+        <div class="aie">「忘れ物したんですけど…」</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// マイメモ一覧
+function showMyMemo() {
+  const list = myMemos.slice().sort((a,b) => b.ts - a.ts);
+  let body;
+  if (list.length === 0) {
+    body = `<div class="memo-empty">
+      <div class="me-icon"><i class="ti ti-notebook"></i></div>
+      <div class="me-ttl">まだメモがありません</div>
+      <div class="me-msg">気になるブースのカードにある<br>📝ボタンをタップしてメモを残せます</div>
+    </div>`;
+  } else {
+    body = '<div class="memo-list">' + list.map(m => {
+      const memoTxt = m.memo ? `<div class="ml-memo">${escapeHtml(m.memo)}</div>` : `<div class="ml-memo ml-memo-empty">（メモなし・気になる）</div>`;
+      return `<div class="ml-card">
+        <div class="ml-hd">
+          <div class="ml-booth">${m.booth}</div>
+          <div class="ml-company">${escapeHtml(m.company)}</div>
+        </div>
+        ${memoTxt}
+        <div class="ml-actions">
+          <button class="ml-btn" onclick="openMemoEditor('${m.booth}','${escapeJsAttr(m.company)}')"><i class="ti ti-edit"></i> 編集</button>
+          <button class="ml-btn ml-btn-del" onclick="if(confirm('削除しますか？')){deleteMemo('${m.booth}');showMyMemo();}"><i class="ti ti-trash"></i> 削除</button>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+
+    // メール送信オプション
+    body += `<div class="memo-mail">
+      <button class="mail-btn" onclick="sendMemosByMail()"><i class="ti ti-mail"></i> このメモを自分宛にメール送信</button>
+      <div class="mail-note">展示会後にPCでも見返せます</div>
+    </div>`;
+  }
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="sub-hd">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="sub-hd-ttl">マイメモ <span class="sub-hd-cnt">${myMemos.length}件</span></div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+// メモ編集モーダル
+function openMemoEditor(booth, company) {
+  const existing = findMemo(booth);
+  const currentMemo = existing ? existing.memo : '';
+
+  // モーダルを画面に追加
+  const modal = document.createElement('div');
+  modal.id = 'memoModal';
+  modal.className = 'memo-modal-bg';
+  modal.innerHTML = `
+    <div class="memo-modal">
+      <div class="mm-hd">
+        <i class="ti ti-notebook"></i> メモを残す
+        <button class="mm-close" onclick="closeMemoEditor()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="mm-booth-info">
+        <div class="mm-booth">${booth}</div>
+        <div class="mm-company">${escapeHtml(company)}</div>
+      </div>
+      <textarea id="memoText" class="mm-textarea" placeholder="例：個包装の少量パック詳細聞く、価格表もらった、来週見積もり依頼" rows="5">${escapeHtml(currentMemo)}</textarea>
+      <div class="mm-mic-row">
+        <button class="mm-mic-btn" id="memoMicBtn" onclick="toggleMemoMic()"><i class="ti ti-microphone"></i> 音声入力</button>
+        <div class="mm-note">空欄でも「気になる」として保存されます</div>
+      </div>
+      <div class="mm-actions">
+        <button class="mm-btn mm-btn-cancel" onclick="closeMemoEditor()">キャンセル</button>
+        <button class="mm-btn mm-btn-save" onclick="saveMemoFromModal('${booth}','${escapeJsAttr(company)}')">保存</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('memoText').focus(), 100);
+}
+
+function closeMemoEditor() {
+  const m = document.getElementById('memoModal');
+  if (m) m.remove();
+  if (memoRecognition && memoListening) { try { memoRecognition.stop(); } catch(e){} }
+}
+
+function saveMemoFromModal(booth, company) {
+  const txt = (document.getElementById('memoText').value || '').trim();
+  addMemo(booth, company, txt);
+  closeMemoEditor();
+  // 検索結果画面なら再描画してアイコン状態更新
+  if (typeof currentSearchResults !== 'undefined' && currentSearchResults && currentSearchLabel) {
+    showResults(currentSearchResults, currentSearchLabel);
+  }
+}
+
+// メモ用音声入力
+let memoRecognition = null;
+let memoListening = false;
+function toggleMemoMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('このブラウザは音声入力に対応していません');
+    return;
+  }
+  const btn = document.getElementById('memoMicBtn');
+  if (memoListening) {
+    if (memoRecognition) memoRecognition.stop();
+    memoListening = false;
+    btn.classList.remove('mic-on');
+    btn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  memoRecognition = new SR();
+  memoRecognition.lang = 'ja-JP';
+  memoRecognition.continuous = false;
+  memoRecognition.interimResults = false;
+  memoRecognition.onresult = (e) => {
+    const txt = e.results[0][0].transcript;
+    const ta = document.getElementById('memoText');
+    if (ta) ta.value = ta.value ? ta.value + ' ' + txt : txt;
+  };
+  memoRecognition.onend = () => {
+    memoListening = false;
+    if (btn) {
+      btn.classList.remove('mic-on');
+      btn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+    }
+  };
+  memoRecognition.start();
+  memoListening = true;
+  btn.classList.add('mic-on');
+  btn.innerHTML = '<i class="ti ti-microphone"></i> 録音中…タップで停止';
+}
+
+// メモをメール送信（mailto:）
+function sendMemosByMail() {
+  if (myMemos.length === 0) return;
+  const list = myMemos.slice().sort((a,b) => b.ts - a.ts);
+  const subject = '【丸菱総合展2026】マイメモ ' + list.length + '件';
+  let body = '丸菱グループ食品機械と原材料 総合展2026\n';
+  body += 'マイメモ一覧（' + list.length + '件）\n';
+  body += '━━━━━━━━━━━━━━━━━━\n\n';
+  list.forEach((m, i) => {
+    body += '[' + (i+1) + '] ' + m.booth + ' ' + m.company + '\n';
+    body += (m.memo ? m.memo : '（メモなし・気になる）') + '\n\n';
+  });
+  body += '━━━━━━━━━━━━━━━━━━\n';
+  body += '第37回 丸菱グループ総合展2026\n';
+  body += '2026年6月10-11日 マリンメッセ福岡A館\n';
+  location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+// HTMLエスケープ
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escapeJsAttr(s) {
+  if (!s) return '';
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 }
 
 function showMachineMenu() {
@@ -575,14 +894,19 @@ function showSeminars() {
       const rsv = s.reservation === '要予約'
         ? `<span style="color:#E24B4A;font-size:12px">● 要予約</span>`
         : `<span style="color:#0F6E56;font-size:12px">● 予約不要</span>`;
+      // venue を解析してMAPボタン化
+      const loc = parseVenue(s.venue);
+      const venueDisplay = loc
+        ? `<button class="venue-btn" onclick="showMapForVenue('${loc.type}','${escapeJsAttr(loc.id)}','${escapeJsAttr(loc.label)}')"><i class="ti ti-map-pin"></i> ${loc.label}</button>`
+        : `<div style="font-size:12px;color:#888780;margin-top:2px"><i class="ti ti-map-pin" style="font-size:12px"></i> ${s.venue}</div>`;
       html += `<div style="padding:12px 16px;border-bottom:1px solid #e8e7e1">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
           <span style="font-size:16px;font-weight:700;color:#1a1a18">${s.time}</span>
           ${badge} ${rsv}
         </div>
         <div style="font-size:15px;font-weight:600;color:#1a1a18;margin-bottom:3px">${s.title}</div>
-        <div style="font-size:13px;color:#73726c">${s.speaker}</div>
-        <div style="font-size:12px;color:#888780;margin-top:2px"><i class="ti ti-map-pin" style="font-size:12px"></i> ${s.venue}</div>
+        <div style="font-size:13px;color:#73726c;margin-bottom:6px">${s.speaker}</div>
+        ${venueDisplay}
       </div>`;
     });
   }
@@ -595,6 +919,65 @@ function showSeminars() {
     </div>
     ${html}
   </div>`;
+}
+
+// venue文字列を解析（ブース番号 or 施設名）
+function parseVenue(venue) {
+  if (!venue) return null;
+  const s = String(venue).trim();
+  // ブース番号を抽出（A58, D51, B74 等）
+  const m = s.match(/[A-D]\s?\d{1,3}/i);
+  if (m) {
+    const boothId = m[0].replace(/\s/g, '').toUpperCase();
+    if (BOOTH_COORDS[boothId]) {
+      return {type: 'booth', id: boothId, label: 'ブース ' + boothId};
+    }
+  }
+  // 施設名でマッチ
+  for (const fname of Object.keys(FACILITY_COORDS)) {
+    if (s.indexOf(fname) >= 0) {
+      return {type: 'facility', id: fname, label: fname};
+    }
+  }
+  return null;
+}
+
+// venueタップで該当MAP表示
+let _mapBackHandler = null;
+function showMapForVenue(type, id, label) {
+  _mapBackHandler = function() { showSeminars(); };
+  if (type === 'booth') {
+    _lastResults = [{booth: id, company: label || id}];
+    _lastLabel = label || id;
+    _lastBoothIds = [id];
+    showMapScreen(id);
+  } else if (type === 'facility') {
+    _lastResults = [];
+    _lastLabel = label || id;
+    _lastBoothIds = [];
+    _currentFocus = null;
+    const pos = FACILITY_COORDS[id];
+    if (!pos) return;
+    _mapView = { x: pos.cx - 80, y: pos.cy - 80, w: 160, h: 160 };
+    document.getElementById('screen').innerHTML = `
+    <div class="screen" style="display:flex;flex-direction:column;height:100%;position:relative">
+      <div class="res-hdr" style="flex-shrink:0">
+        <button class="back-btn" onclick="_mapBackHandler ? _mapBackHandler() : showHome()"><i class="ti ti-arrow-left"></i></button>
+        <div class="res-q">${label || id}</div>
+      </div>
+      <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px 8px 90px 8px;position:relative">
+        <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;width:100%;height:100%;touch-action:none;cursor:grab">
+          ${buildMapSVG([], pos)}
+        </div>
+        <div style="position:absolute;bottom:100px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
+          <button onclick="mapZoomVB(1/1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
+          <button onclick="mapZoomVB(1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">−</button>
+          <button onclick="mapResetVB()" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;font-weight:700;color:#0F6E56;cursor:pointer">⛶</button>
+        </div>
+      </div>
+    </div>`;
+    initMapInteractions();
+  }
 }
 
 function showLoading() {
@@ -614,21 +997,31 @@ function showResults(results, label) {
   _lastResults = results;
   _lastLabel = label;
   _lastBoothIds = results.map(r => r.booth).filter(b => BOOTH_COORDS[b]);
+  _mapBackHandler = null;  // 通常検索→MAP→検索結果に戻る
+
+  // 検索結果を保持してメモ保存後の再描画に使う
+  currentSearchResults = results;
+  currentSearchLabel = label;
 
   let cards = '';
   results.forEach(r => {
     const hasCoord = BOOTH_COORDS[r.booth] ? true : false;
+    const memoExists = findMemo(r.booth);
+    const memoIcon = memoExists ? 'ti-notebook-off' : 'ti-notebook';
+    const memoClass = memoExists ? 'memo-btn memo-btn-on' : 'memo-btn';
+    const memoLabel = memoExists ? '保存済' : 'メモ';
     const mapBtn = hasCoord
-      ? `<button class="map-jump-btn" onclick="showMapScreen('${r.booth}')">📍地図</button>`
+      ? `<button class="map-jump-btn" onclick="event.stopPropagation();showMapScreen('${r.booth}')">📍地図</button>`
       : '';
+    const memoBtn = `<button class="${memoClass}" onclick="event.stopPropagation();openMemoEditor('${r.booth}','${escapeJsAttr(r.company)}')"><i class="ti ${memoIcon}"></i>${memoLabel}</button>`;
     cards += `<div class="rc">
       <div class="rc-booth rc-booth-btn" onclick="showMapScreen('${r.booth}')" style="${hasCoord?'cursor:pointer':''}">
         <div class="rc-bnum">${r.booth}</div><div class="rc-blbl">ブース</div>
       </div>
       <div style="flex:1"><div class="rc-co">${r.company}</div>
         <div class="rc-prod">${r.matchedTags ? r.matchedTags.slice(0,3).join('・') : ''}</div>
+        <div class="rc-btns">${memoBtn}${mapBtn}</div>
       </div>
-      ${mapBtn}
     </div>`;
   });
 
@@ -669,7 +1062,7 @@ function showMapScreen(focusBooth) {
   document.getElementById('screen').innerHTML = `
   <div class="screen" style="display:flex;flex-direction:column;height:100%;position:relative">
     <div class="res-hdr" style="flex-shrink:0">
-      <button class="back-btn" onclick="showResults(_lastResults,_lastLabel)"><i class="ti ti-arrow-left"></i></button>
+      <button class="back-btn" onclick="_mapBackHandler ? _mapBackHandler() : showResults(_lastResults,_lastLabel)"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">${focusBooth ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'') : _lastLabel}</div>
       <div class="res-cnt">${highlightIds.length}件</div>
     </div>
