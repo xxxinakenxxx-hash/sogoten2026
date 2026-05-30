@@ -409,7 +409,7 @@ const H_CORRIDORS = [
   {"y":511,"x1":114,"x2":453},{"y":443,"x1":108,"x2":447},{"y":525,"x1":454,"x2":530},
   {"y":88,"x1":40,"x2":522},{"y":240,"x1":42,"x2":115},{"y":198,"x1":118,"x2":280},
   {"y":129,"x1":118,"x2":280},{"y":158,"x1":280,"x2":447},{"y":289,"x1":283,"x2":451},
-  {"y":266,"x1":116,"x2":281},{"y":494,"x1":41,"x2":104},{"y":214,"x1":449,"x2":527},
+  {"y":266,"x1":116,"x2":281},{"y":494,"x1":39,"x2":104},{"y":214,"x1":449,"x2":527},
   {"y":578,"x1":107,"x2":475},{"y":627,"x1":108,"x2":473},{"y":644,"x1":476,"x2":529}
 ];
 const V_CORRIDORS = [
@@ -1945,12 +1945,18 @@ function initFuse() {
   });
 }
 
+// カテゴリ検索で固定追加するブース
+// 業種除外フィルタに引っかかるが表示すべき例外出展社
+const CAT_FIXED_BOOTHS = {
+  '冷凍生地・冷凍食材': ['C02'], // 株式会社七洋製作所（機械業種だが冷凍食材も扱う）
+};
+
 function searchCat(idx) {
   const c = MAIN_CATS[idx];
-  search(c.q, c.label, c.excludeBusiness);
+  search(c.q, c.label, c.excludeBusiness, CAT_FIXED_BOOTHS[c.label] || []);
 }
 
-function search(q, label, excludeBusiness) {
+function search(q, label, excludeBusiness, fixedBooths) {
   showLoading();
   searchCount++;
 
@@ -2025,6 +2031,15 @@ function search(q, label, excludeBusiness) {
   const booths = top.map(r => r.booth).join(',');
   if (localStorage.getItem(CONSENT_KEY) === '1') {
     sendLog({ keyword: q, lang: lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount: searchCount, gyotai: visitorGyotai, qr: visitorQRCode });
+  }
+
+  // 固定追加ブース（除外フィルタの例外）
+  if (fixedBooths && fixedBooths.length) {
+    fixedBooths.forEach(function(bid) {
+      if (top.find(r => r.booth === bid)) return; // 既にある場合はスキップ
+      const item = P.find(p => p.booth === bid);
+      if (item) top.push(Object.assign({}, item, { score: 1, matchedTags: item.tags || [] }));
+    });
   }
 
   showResults(top, label);
