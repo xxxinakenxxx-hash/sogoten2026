@@ -283,6 +283,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 // ★ GAS Web App URL をここに設定してください
 // ============================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
+// ?ai=1 のときだけOpenAI呼び出し。未指定はデモモード（APIキー不要）
+let AI_ENABLED = new URLSearchParams(location.search).get('ai') === '1';
+function toggleAI() {
+  AI_ENABLED = !AI_ENABLED;
+  localStorage.setItem('sogoten2026_ai', AI_ENABLED ? '1' : '0');
+  showHome();
+}
+// localStorage復元（ページ再読込後も維持）
+if (localStorage.getItem('sogoten2026_ai') !== null) {
+  AI_ENABLED = localStorage.getItem('sogoten2026_ai') === '1';
+}
 
 // ============================================================
 // 状態管理
@@ -852,10 +863,16 @@ function showHome() {
         <i class="ti ti-chart-bar"></i> 退場レポート（本日の足跡）
       </button>
     </div>
-    <div style="padding:0 16px 16px;text-align:center">
+    <div style="padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between">
       <a href="?reset=1" style="font-size:11px;color:#b4b2a9;text-decoration:none">
         ⚙️ 同意・QR画面を再確認（開発用）
       </a>
+      <div onclick="toggleAI()" style="display:flex;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <span style="font-size:11px;font-weight:600;color:${AI_ENABLED ? '#0F6E56' : '#888780'}">${AI_ENABLED ? '🤖 AI ON' : '🔧 AI OFF'}</span>
+        <div style="width:36px;height:20px;border-radius:10px;background:${AI_ENABLED ? '#0F6E56' : '#ccc'};position:relative;transition:background .2s">
+          <div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:${AI_ENABLED ? '18px' : '2px'};transition:left .2s"></div>
+        </div>
+      </div>
     </div>
   </div>`;
 }
@@ -1101,6 +1118,7 @@ function showAIConcierge() {
     <div class="res-hdr">
       <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">AIコンシェルジュ</div>
+      <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;${AI_ENABLED ? 'background:#E1F5EE;color:#0F6E56' : 'background:#f5f5f3;color:#888780'}">${AI_ENABLED ? '🤖 AI本番' : '🔧 デモ'}</span>
       <button onclick="aiHistory=[];showAIConcierge()" style="background:none;border:none;color:#73726c;font-size:12px;cursor:pointer;padding:4px 8px">リセット</button>
     </div>
     <div class="ai-msgs" id="aiMsgs">
@@ -1172,6 +1190,9 @@ function aiSend() {
 }
 
 async function callOpenAI(userMsg) {
+  // AIなしモードはデモレスポンスに即フォールバック
+  if (!AI_ENABLED) return demoAIResponse(userMsg);
+
   // 出展社リスト：タグの先頭一致スコアで関連度を計算して渡す
   // 質問キーワードがタグの早い位置にある社ほど上位に表示される
   const qNormAI = userMsg.replace(/[\s　。、？！]+/g, '').toLowerCase();
@@ -1678,8 +1699,9 @@ function showResults(results, label) {
     <div class="no-res">
       <i class="ti ti-search"></i>
       <h3>見つかりませんでした</h3>
-      <p>別のキーワードで検索してみてください</p>
-    </div>` : '';
+      <p>${AI_ENABLED ? 'AIコンシェルジュが下に提案を表示します...' : '別のキーワードで検索してみてください'}</p>
+    </div>
+    <div id="aiSearchFallback"></div>` : '';
 
   document.getElementById('screen').innerHTML = `
   <div class="screen">
@@ -2095,6 +2117,22 @@ function search(q, label, excludeBusiness, fixedBooths) {
       const item = P.find(p => p.booth === bid);
       if (item) top.push(Object.assign({}, item, { score: 1, matchedTags: item.tags || [] }));
     });
+  }
+
+  // ── 該当なし & AI ON → AIコンシェルジュにフォールバック ──
+  if (top.length === 0 && AI_ENABLED) {
+    showResults([], label);
+    // 「該当なし」メッセージの下にAI提案を追加
+    callOpenAI(q).then(reply => {
+      const noResEl = document.getElementById('aiSearchFallback');
+      if (!noResEl) return;
+      noResEl.innerHTML = \`
+        <div style="margin:12px 16px 0;background:#E1F5EE;border-radius:12px;padding:14px;font-size:13px;line-height:1.7">
+          <div style="font-weight:600;color:#0F6E56;margin-bottom:6px">🤖 AIコンシェルジュの提案</div>
+          <div style="color:#1a1a18">\${escapeHtml(reply).replace(/\n/g,'<br>')}</div>
+        </div>\`;
+    }).catch(() => {});
+    return;
   }
 
   showResults(top, label);
