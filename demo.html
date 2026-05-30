@@ -1135,6 +1135,9 @@ function aiSend() {
     aiHistory.push({role: 'assistant', content: reply});
     document.getElementById('aiSendBtn').disabled = false;
 
+    // ブース検索ショートカットボタンを追加
+    appendSearchShortcut(loadEl, msg);
+
     // リード化の機会を検出（見積・詳細・サンプル系）
     if (/見積|詳しく|サンプル|資料|連絡|問い合わせ/.test(msg + reply)) {
       appendLeadCard(loadEl);
@@ -1246,6 +1249,27 @@ function appendAiMsg(role, text, id) {
   div.innerHTML = `<div class="${bubbleClass}"${id ? ' id="'+id+'"' : ''}>${escapeHtml(text).replace(/\n/g,'<br>')}</div><div class="ai-time">${now}</div>`;
   msgs.appendChild(div);
   scrollAiToBottom();
+}
+
+function appendSearchShortcut(afterEl, userMsg) {
+  if (!afterEl) return;
+  // セミナー系・挨拶系はスキップ
+  if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|場所.*ト|忘れ|トイレ/.test(userMsg)) return;
+
+  // ユーザーのメッセージから検索キーワードを抽出
+  // 「〜を探している」「〜はどこ」「〜について」などから核心語を取り出す
+  const q = userMsg
+    .replace(/を探して(いる|る|ほしい|います)?|はどこ|について|教えて|ください|ある\?|あります\??|が欲しい|ありますか/g, '')
+    .replace(/[？?！!。、　\s]+/g, ' ')
+    .trim();
+
+  if (!q || q.length < 2) return;
+
+  const btn = document.createElement('button');
+  btn.style.cssText = 'margin-top:8px;background:#E1F5EE;border:1px solid #0F6E56;color:#0F6E56;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent';
+  btn.innerHTML = '<i class="ti ti-search" style="font-size:13px"></i> 「' + escapeHtml(q) + '」でブース一覧を見る';
+  btn.onclick = function() { search(q, q); };
+  afterEl.closest('.ai-msg').appendChild(btn);
 }
 
 function appendLeadCard(afterEl) {
