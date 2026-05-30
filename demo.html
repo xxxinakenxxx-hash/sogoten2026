@@ -944,39 +944,22 @@ function parseVenue(venue) {
 
 // venueタップで該当MAP表示
 let _mapBackHandler = null;
+let _facilityFocus = null;
 function showMapForVenue(type, id, label) {
   _mapBackHandler = function() { showSeminars(); };
   if (type === 'booth') {
     _lastResults = [{booth: id, company: label || id}];
     _lastLabel = label || id;
     _lastBoothIds = [id];
+    _facilityFocus = null;
     showMapScreen(id);
   } else if (type === 'facility') {
+    // 施設も通常のMAP画面と同じUIで表示（経路検索も使える）
+    _facilityFocus = id;
     _lastResults = [];
     _lastLabel = label || id;
     _lastBoothIds = [];
-    _currentFocus = null;
-    const pos = FACILITY_COORDS[id];
-    if (!pos) return;
-    _mapView = { x: pos.cx - 80, y: pos.cy - 80, w: 160, h: 160 };
-    document.getElementById('screen').innerHTML = `
-    <div class="screen" style="display:flex;flex-direction:column;height:100%;position:relative">
-      <div class="res-hdr" style="flex-shrink:0">
-        <button class="back-btn" onclick="_mapBackHandler ? _mapBackHandler() : showHome()"><i class="ti ti-arrow-left"></i></button>
-        <div class="res-q">${label || id}</div>
-      </div>
-      <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px 8px 90px 8px;position:relative">
-        <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;width:100%;height:100%;touch-action:none;cursor:grab">
-          ${buildMapSVG([], pos, null, id)}
-        </div>
-        <div style="position:absolute;bottom:100px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
-          <button onclick="mapZoomVB(1/1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
-          <button onclick="mapZoomVB(1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">−</button>
-          <button onclick="mapResetVB()" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;font-weight:700;color:#0F6E56;cursor:pointer">⛶</button>
-        </div>
-      </div>
-    </div>`;
-    initMapInteractions();
+    showMapScreen(null);
   }
 }
 
@@ -1057,18 +1040,26 @@ function showMapScreen(focusBooth) {
   // viewBox状態を初期化
   _mapView = { x: 0, y: 0, w: 561, h: 734 };
   const highlightIds = focusBooth ? [focusBooth] : _lastBoothIds;
-  const focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
+  let focusPos = focusBooth ? BOOTH_COORDS[focusBooth] : null;
+  // 施設フォーカス時は施設座標にフォーカス
+  if (!focusBooth && _facilityFocus && FACILITY_COORDS[_facilityFocus]) {
+    focusPos = FACILITY_COORDS[_facilityFocus];
+  }
+  const headerLabel = focusBooth
+    ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'')
+    : _lastLabel;
+  const cntLabel = _facilityFocus ? '' : `<div class="res-cnt">${highlightIds.length}件</div>`;
 
   document.getElementById('screen').innerHTML = `
   <div class="screen" style="display:flex;flex-direction:column;height:100%;position:relative">
     <div class="res-hdr" style="flex-shrink:0">
       <button class="back-btn" onclick="_mapBackHandler ? _mapBackHandler() : showResults(_lastResults,_lastLabel)"><i class="ti ti-arrow-left"></i></button>
-      <div class="res-q">${focusBooth ? focusBooth + ' ' + ((_lastResults.find(r=>r.booth===focusBooth)||{}).company||'') : _lastLabel}</div>
-      <div class="res-cnt">${highlightIds.length}件</div>
+      <div class="res-q">${headerLabel}</div>
+      ${cntLabel}
     </div>
     <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px 8px 90px 8px;position:relative">
       <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;width:100%;height:100%;touch-action:none;cursor:grab">
-        ${buildMapSVG(highlightIds, focusPos)}
+        ${buildMapSVG(highlightIds, focusPos, null, _facilityFocus)}
       </div>
       <div style="position:absolute;bottom:100px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
         <button onclick="mapZoomVB(1/1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
@@ -1213,10 +1204,13 @@ function showRoute() {
   }
   fromInput.style.borderColor = '#0F6E56';
   const highlightIds = _currentFocus ? [_currentFocus] : _lastBoothIds;
-  const focusPos = _currentFocus ? BOOTH_COORDS[_currentFocus] : null;
+  let focusPos = _currentFocus ? BOOTH_COORDS[_currentFocus] : null;
+  if (!_currentFocus && _facilityFocus && FACILITY_COORDS[_facilityFocus]) {
+    focusPos = FACILITY_COORDS[_facilityFocus];
+  }
   const wrap = document.getElementById('map-svg-wrap');
   if(wrap) {
-    wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth);
+    wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth, _facilityFocus);
     applyViewBox();
   }
 }
@@ -1277,6 +1271,16 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
   let routeLayer = '';
   if(fromBooth && BOOTH_COORDS[fromBooth]) {
     const fp = BOOTH_COORDS[fromBooth];
+
+    // 施設への経路（施設フォーカス時）
+    if (highlightFacility && FACILITY_COORDS[highlightFacility]) {
+      const tp = FACILITY_COORDS[highlightFacility];
+      const pathD = findCorridorRoute(fp, tp);
+      if(pathD) {
+        routeLayer += '<path d="'+pathD+'" stroke="#E24B4A" stroke-width="2.5" fill="none" stroke-dasharray="6,3" opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>';
+        routeLayer += '<circle cx="'+tp.cx+'" cy="'+tp.cy+'" r="4" fill="#E24B4A"/>';
+      }
+    }
 
     (highlightIds||[]).forEach(function(bid) {
       if(bid === fromBooth) return;
