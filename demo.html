@@ -967,7 +967,7 @@ function showMapForVenue(type, id, label) {
       </div>
       <div style="flex:1;overflow:hidden;background:#f5f5f3;padding:8px 8px 90px 8px;position:relative">
         <div id="map-svg-wrap" style="background:white;border-radius:12px;overflow:hidden;width:100%;height:100%;touch-action:none;cursor:grab">
-          ${buildMapSVG([], pos)}
+          ${buildMapSVG([], pos, null, id)}
         </div>
         <div style="position:absolute;bottom:100px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:20">
           <button onclick="mapZoomVB(1/1.5)" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:22px;font-weight:700;color:#0F6E56;cursor:pointer">＋</button>
@@ -1232,7 +1232,7 @@ const MAP_COLORS = {"A": "#854F0B", "B": "#185FA5", "C": "#0F6E56", "D": "#99355
 const MAP_BG = {"A": "#FAEEDA", "B": "#E6F1FB", "C": "#E1F5EE", "D": "#FBEAF0"};
 const SVG_INNER = ''; // loaded via fetch
 
-function buildMapSVG(highlightIds, focusPos, fromBooth) {
+function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
   // ── 会場レイアウト（venue_map.svgの中身を背景に） ──
   // 読み込み済みならそれを使う、未読込なら最低限の外枠だけ
   const venueLayer = VENUE_SVG_INNER
@@ -1249,6 +1249,16 @@ function buildMapSVG(highlightIds, focusPos, fromBooth) {
       + '<text x="'+fac.cx+'" y="'+(fac.cy+2.5)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
       + '</g>';
   });
+
+  // ── 施設ハイライト（セミナー会場など） ──
+  let facHighlightLayer = '';
+  if (highlightFacility && FACILITY_COORDS[highlightFacility]) {
+    const fac = FACILITY_COORDS[highlightFacility];
+    facHighlightLayer = '<g>'
+      + '<circle cx="'+fac.cx+'" cy="'+fac.cy+'" r="28" fill="#E24B4A" opacity="0.15"><animate attributeName="r" values="20;32;20" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0.05;0.4" dur="1.5s" repeatCount="indefinite"/></circle>'
+      + '<circle cx="'+fac.cx+'" cy="'+fac.cy+'" r="18" fill="none" stroke="#E24B4A" stroke-width="2.5" opacity="0.9"/>'
+      + '</g>';
+  }
 
   // ── ハイライトブース ──
   let hlLayer = '';
@@ -1290,6 +1300,7 @@ function buildMapSVG(highlightIds, focusPos, fromBooth) {
   return '<svg viewBox="0 0 561 734" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;background:#fafaf8">'
     + venueLayer
     + '<g>' + facLayer + '</g>'
+    + '<g>' + facHighlightLayer + '</g>'
     + '<g>' + routeLayer + '</g>'
     + '<g>' + hlLayer + '</g>'
     + '</svg>';
