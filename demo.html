@@ -1172,8 +1172,28 @@ function aiSend() {
 }
 
 async function callOpenAI(userMsg) {
-  // 出展社リスト（上位60社をコンテキストに）
-  const boothContext = P.slice(0, 60).map(p =>
+  // 出展社リスト：タグの先頭一致スコアで関連度を計算して渡す
+  // 質問キーワードがタグの早い位置にある社ほど上位に表示される
+  const qNormAI = userMsg.replace(/[\s　。、？！]+/g, '').toLowerCase();
+  let contextBooths = [];
+  if (qNormAI.length >= 2) {
+    const scored = P.map(p => {
+      const tags = p.tags || [];
+      let score = 0;
+      tags.forEach((tag, idx) => {
+        const t = tag.toLowerCase();
+        if (t === qNormAI) score += 100 - idx;         // 完全一致：タグ順で重み付け
+        else if (t.includes(qNormAI)) score += 50 - idx; // 部分一致
+        else if (qNormAI.includes(t) && t.length >= 2) score += 20 - idx; // 逆包含
+      });
+      return { p, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    contextBooths = scored.map(s => s.p).slice(0, 80);
+  } else {
+    contextBooths = P.slice(0, 80);
+  }
+  const boothContext = contextBooths.map(p =>
     `${p.booth} ${p.company}：${(p.tags||[]).slice(0,5).join('、')}`
   ).join('\n');
 
@@ -1206,7 +1226,7 @@ ${seminarsContext}
 【回答ルール】
 1. 業態に合わせた専門的なアドバイスをする（${visitorGyotai || '全業態向け'}視点）
 2. 出展社を案内する際は必ずブース番号を添える（例: ホシザキ C11）
-3. 複数の関連出展社があれば3社程度提案する
+3. 複数の関連出展社があれば最大5社提案する（多いほど出展社に公平）
 4. 場所を聞かれたら「MAPで見る」ことを促す
 5. 見積・詳細希望には丸菱営業担当への連携を提案する
 6. 回答は簡潔に。200文字以内を目安にする
@@ -1277,10 +1297,14 @@ function appendSearchShortcut(afterEl, userMsg) {
   // セミナー系・挨拶系はスキップ
   if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|場所.*ト|忘れ|トイレ/.test(userMsg)) return;
 
-  // ユーザーのメッセージから検索キーワードを抽出
-  // 「〜を探している」「〜はどこ」「〜について」などから核心語を取り出す
+  // ユーザーのメッセージから核心キーワードを抽出
+  // 「〜の場所を教えて」「〜はどこ」「〜を探してる」などの語尾・助詞を除去
   const q = userMsg
-    .replace(/を探して(いる|る|ほしい|います)?|はどこ|について|教えて|ください|ある\?|あります\??|が欲しい|ありますか/g, '')
+    .replace(/の場所(を|は|が)?(教えて|知りたい|わかる|教えてください)?/g, '')
+    .replace(/を探して(いる|る|ほしい|います|ほしいです)?/g, '')
+    .replace(/(は|が|を|に|で|の)?(どこ|どこに|どこへ|どこにある|どこにいる)/g, '')
+    .replace(/について(教えて|知りたい|ください)?/g, '')
+    .replace(/(教えて|ください|お願い|知りたい|わかる|ありますか|あります|ある\?|が欲しい)/g, '')
     .replace(/[？?！!。、　\s]+/g, ' ')
     .trim();
 
