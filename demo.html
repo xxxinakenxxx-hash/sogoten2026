@@ -6,6 +6,7 @@
 <title>総合展2026 AIガイド</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7/dist/fuse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;height:100dvh;background:#f5f5f3}
@@ -180,6 +181,90 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 /* === セミナーvenueボタン === */
 .venue-btn{background:#fff;border:1px solid #0F6E56;color:#0F6E56;font-size:12px;font-weight:600;padding:6px 12px;border-radius:16px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;margin-top:2px}
 .venue-btn:active{background:#E1F5EE}
+
+/* === 同意画面 === */
+.consent-wrap{padding:0;display:flex;flex-direction:column;height:100%}
+.consent-hero{background:linear-gradient(135deg,#0F6E56 0%,#1a8c6e 100%);padding:40px 24px 32px;text-align:center;color:#fff}
+.consent-logo{font-size:56px;margin-bottom:12px}
+.consent-ttl{font-size:22px;font-weight:700;margin-bottom:6px}
+.consent-sub{font-size:13px;opacity:.85;line-height:1.5}
+.consent-body{padding:24px 20px;flex:1;overflow-y:auto}
+.consent-card{background:#f9f9f7;border-radius:14px;padding:16px;margin-bottom:16px}
+.consent-card-ttl{font-size:13px;font-weight:700;color:#1a1a18;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.consent-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #e8e7e1;font-size:13px;color:#444441}
+.consent-item:last-child{border-bottom:none}
+.consent-item i{color:#0F6E56;flex-shrink:0;margin-top:1px;font-size:16px}
+.consent-notice{font-size:11px;color:#888780;line-height:1.6;text-align:center;padding:0 8px 20px}
+.consent-btns{padding:16px 20px calc(16px + env(safe-area-inset-bottom)) 20px;background:#fff;border-top:1px solid #e8e7e1}
+.consent-ok{width:100%;padding:16px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;margin-bottom:10px}
+.consent-ok:active{opacity:.85}
+.consent-skip{width:100%;padding:12px;background:none;border:none;color:#888780;font-size:13px;cursor:pointer}
+
+/* === QRスキャン画面 === */
+.qr-wrap{padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.qr-icon{width:100px;height:100px;border-radius:24px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:48px}
+.qr-ttl{font-size:20px;font-weight:700;color:#1a1a18}
+.qr-sub{font-size:13px;color:#73726c;line-height:1.6}
+.qr-scan-area{width:220px;height:220px;border:3px solid #0F6E56;border-radius:18px;position:relative;background:#f0faf5;display:flex;align-items:center;justify-content:center;margin:8px 0}
+.qr-corner{position:absolute;width:24px;height:24px;border-color:#0F6E56;border-style:solid}
+.qr-corner.tl{top:-3px;left:-3px;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
+.qr-corner.tr{top:-3px;right:-3px;border-width:4px 4px 0 0;border-radius:0 4px 0 0}
+.qr-corner.bl{bottom:-3px;left:-3px;border-width:0 0 4px 4px;border-radius:0 0 0 4px}
+.qr-corner.br{bottom:-3px;right:-3px;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
+.qr-scan-line{position:absolute;width:80%;height:2px;background:linear-gradient(90deg,transparent,#0F6E56,transparent);animation:scanline 2s ease-in-out infinite}
+@keyframes scanline{0%{top:20px;opacity:1}50%{top:180px;opacity:.8}100%{top:20px;opacity:1}}
+.qr-btn{width:100%;max-width:320px;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer}
+.qr-btn:active{opacity:.85}
+.qr-skip{background:none;border:none;color:#888780;font-size:13px;cursor:pointer;padding:8px;text-decoration:underline}
+.qr-manual{width:100%;max-width:320px}
+.qr-manual input{width:100%;padding:13px 16px;border:1.5px solid #d3d1c7;border-radius:10px;font-size:16px;text-transform:uppercase;margin-bottom:8px;outline:none}
+.qr-manual input:focus{border-color:#0F6E56}
+.business-tag{display:inline-block;background:#E1F5EE;color:#0F6E56;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-top:4px}
+
+/* === AIコンシェルジュ === */
+.ai-wrap{display:flex;flex-direction:column;height:100%}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{max-width:86%;display:flex;flex-direction:column;gap:4px}
+.ai-msg.user{align-self:flex-end;align-items:flex-end}
+.ai-msg.bot{align-self:flex-start;align-items:flex-start}
+.ai-bubble{padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.6;word-break:break-word}
+.ai-msg.user .ai-bubble{background:#0F6E56;color:#fff;border-radius:18px 18px 4px 18px}
+.ai-msg.bot .ai-bubble{background:#f5f5f3;color:#1a1a18;border-radius:18px 18px 18px 4px}
+.ai-msg.bot .ai-bubble.loading{color:#73726c}
+.ai-time{font-size:10px;color:#888780}
+.ai-input-row{padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;background:#fff;border-top:1px solid #e8e7e1;display:flex;gap:8px;align-items:flex-end}
+.ai-inp{flex:1;padding:11px 14px;border:1.5px solid #d3d1c7;border-radius:20px;font-size:15px;outline:none;resize:none;max-height:100px;line-height:1.5;font-family:inherit}
+.ai-inp:focus{border-color:#185FA5}
+.ai-send{width:44px;height:44px;border-radius:50%;border:none;background:#185FA5;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-send:active{opacity:.85}
+.ai-send:disabled{background:#d3d1c7}
+.ai-lead-card{background:#fff;border:1.5px solid #185FA5;border-radius:12px;padding:12px;margin-top:6px;font-size:13px}
+.ai-lead-ttl{font-size:12px;font-weight:600;color:#185FA5;margin-bottom:6px}
+.ai-lead-btns{display:flex;gap:8px;margin-top:8px}
+.ai-lead-btn{flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none}
+.ai-lead-yes{background:#185FA5;color:#fff}
+.ai-lead-no{background:#f5f5f3;color:#73726c}
+.ai-biz-badge{background:#FAEEDA;color:#854F0B;font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:8px}
+
+/* === 退場レポート === */
+.report-wrap{padding:16px}
+.report-hero{background:linear-gradient(135deg,#1a1a18 0%,#2a2a28 100%);border-radius:16px;padding:20px;color:#fff;margin-bottom:16px;text-align:center}
+.report-hero-ttl{font-size:18px;font-weight:700;margin-bottom:4px}
+.report-hero-sub{font-size:12px;opacity:.7}
+.report-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.rstat{background:#f5f5f3;border-radius:12px;padding:14px;text-align:center}
+.rstat-num{font-size:28px;font-weight:700;color:#0F6E56}
+.rstat-lbl{font-size:11px;color:#73726c;margin-top:2px}
+.report-sec{background:#fff;border:1px solid #e8e7e1;border-radius:12px;padding:14px;margin-bottom:12px}
+.report-sec-ttl{font-size:13px;font-weight:700;color:#1a1a18;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.report-kw-list{display:flex;flex-wrap:wrap;gap:6px}
+.report-kw{background:#E1F5EE;color:#0F6E56;font-size:12px;padding:4px 10px;border-radius:14px}
+.satisfaction-row{display:flex;justify-content:center;gap:12px;margin:10px 0}
+.sat-btn{width:56px;height:56px;border-radius:50%;border:2px solid #e8e7e1;background:#fff;font-size:26px;cursor:pointer;transition:all .15s}
+.sat-btn.on{border-color:#0F6E56;background:#E1F5EE;transform:scale(1.15)}
+.report-submit{width:100%;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
+.report-submit:active{opacity:.85}
+
 </style>
 </head>
 <body>
@@ -233,6 +318,86 @@ function deleteMemo(booth) {
 
 // セッションID（1回の来場につき1つ）
 const SESSION_ID = 'S' + Date.now().toString(36).toUpperCase();
+
+// ============================================================
+// 業態・QR・同意管理
+// ============================================================
+const CONSENT_KEY  = 'sogoten2026_consent';
+const VISITOR_KEY  = 'sogoten2026_visitor';
+const SESSION_START = Date.now();
+
+// 業態マスタ（kd69-xxxx → 業態名）
+// 実本番ではGASのSPIRAL DBと連携。現在はダミー11業態で動作
+const GYOTAI_MAP = {
+  'kd69-0001': 'パン製造業',
+  'kd69-0002': 'ケーキ・洋菓子製造業',
+  'kd69-0003': '和菓子製造業',
+  'kd69-0004': '小売・流通業',
+  'kd69-0005': '飲食店',
+  'kd69-0006': 'ホテル・ブライダル',
+  'kd69-0007': '食品卸・商社',
+  'kd69-0008': '学校・給食',
+  'kd69-0009': 'アイスクリーム・ジェラート',
+  'kd69-0010': 'コーヒー・カフェ',
+  'kd69-0011': 'その他',
+};
+
+// 業態別AIプロンプト補足
+const GYOTAI_CONTEXT = {
+  'パン製造業':       '製パン・ベーカリーの専門家として回答。製パン工程、食パン・バゲット・クロワッサンなどの専門知識を活かす。',
+  'ケーキ・洋菓子製造業': 'パティシエ・洋菓子製造の専門家として回答。デコレーション、焼成、冷凍デザートなどの専門知識を活かす。',
+  '和菓子製造業':     '和菓子職人の視点で回答。餡・求肥・練り切りなど和菓子素材・機械に詳しく案内する。',
+  '小売・流通業':     '食品小売・流通業者の視点で回答。容量・賞味期限・価格帯・POP素材など販売適性を重視する。',
+  '飲食店':          '飲食店経営者の視点で回答。コスト・オペレーション効率・メニュー開発に焦点を当てる。',
+  'ホテル・ブライダル': 'ホテル・ウェディング業界の視点で回答。高品質・プレゼンテーション・大量調理に焦点を当てる。',
+  '食品卸・商社':     '食品卸・商社の視点で回答。ロット・価格・供給安定性・輸入品情報を重視する。',
+  '学校・給食':       '給食・集団調理の視点で回答。アレルゲン対応・大量調理・コスト管理を重視する。',
+  'アイスクリーム・ジェラート': 'アイスクリーム・ジェラート製造の専門家として回答。乳脂肪・フリーザー・原料配合に詳しく案内する。',
+  'コーヒー・カフェ': 'カフェ・コーヒー専門店の視点で回答。抽出機器・食材ペアリング・スイーツメニューに焦点を当てる。',
+  '': '食品業界のプロとして回答する。',
+};
+
+let visitorGyotai = '';      // 判定済み業態名
+let visitorQRCode = '';      // スキャン済みQRコード
+let appStartTime  = Date.now();
+
+// ビジタープロフィールをsessionStorageで管理（再読込でも維持）
+try {
+  const vd = JSON.parse(sessionStorage.getItem(VISITOR_KEY) || '{}');
+  visitorGyotai = vd.gyotai || '';
+  visitorQRCode = vd.qr    || '';
+} catch(e) {}
+
+function saveVisitor() {
+  try { sessionStorage.setItem(VISITOR_KEY, JSON.stringify({gyotai: visitorGyotai, qr: visitorQRCode})); } catch(e) {}
+}
+
+// 行動ログ（退場レポート用）
+let actionLog = {
+  searchKeywords: [],   // [{q, ts}]
+  viewedBooths:   [],   // [{booth, company, ts}]
+  aiQueries:      0,
+};
+try {
+  const al = JSON.parse(sessionStorage.getItem('sogoten2026_actions') || '{}');
+  if (al.searchKeywords) actionLog = al;
+} catch(e) {}
+function saveActionLog() {
+  try { sessionStorage.setItem('sogoten2026_actions', JSON.stringify(actionLog)); } catch(e) {}
+}
+function logKeyword(q) {
+  if (!q || actionLog.searchKeywords.find(x => x.q === q)) return;
+  actionLog.searchKeywords.push({q, ts: Date.now()});
+  saveActionLog();
+}
+function logBooth(booth, company) {
+  if (!booth || actionLog.viewedBooths.find(x => x.booth === booth)) return;
+  actionLog.viewedBooths.push({booth, company, ts: Date.now()});
+  saveActionLog();
+}
+
+// AI会話履歴
+let aiHistory = [];  // [{role:'user'|'assistant', content:'...'}]
 
 // 商品データ（GASから取得 or フォールバック）
 let P = [];
@@ -532,9 +697,18 @@ window.addEventListener('load', async () => {
   // SVG読込も待つ
   await svgPromise;
 
-  // Fuse.js初期化＆ホーム表示
+  // Fuse.js初期化
   initFuse();
-  showHome();
+
+  // 起動フロー判定
+  const hasConsent = localStorage.getItem(CONSENT_KEY) === '1';
+  if (!hasConsent) {
+    showConsentScreen();
+  } else if (!visitorQRCode) {
+    showQRScreen();
+  } else {
+    showHome();
+  }
 });
 
 // ============================================================
@@ -633,6 +807,11 @@ function showHome() {
         <div class="mm-sub">時間・会場・スケジュール</div>
       </div>
     </div>
+    <div style="padding:0 16px 8px">
+      <button onclick="showExitReport()" style="width:100%;padding:12px;background:#1a1a18;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="ti ti-chart-bar"></i> 退場レポート（本日の足跡）
+      </button>
+    </div>
   </div>`;
 }
 
@@ -673,25 +852,418 @@ function showBoothSearch() {
 }
 
 // AIコンシェルジュ（モック・本実装は後日）
-function showAIConcierge() {
+// ============================================================
+// 同意画面
+// ============================================================
+function showConsentScreen() {
+  document.getElementById('screen').innerHTML = `
+  <div class="screen consent-wrap">
+    <div class="consent-hero">
+      <div class="consent-logo">🤖</div>
+      <div class="consent-ttl">丸菱グループ 総合展2026</div>
+      <div class="consent-sub">AIガイドへようこそ<br>ご利用前に以下をご確認ください</div>
+    </div>
+    <div class="consent-body">
+      <div class="consent-card">
+        <div class="consent-card-ttl"><i class="ti ti-database" style="color:#0F6E56"></i>取得する情報</div>
+        <div class="consent-item"><i class="ti ti-check"></i>検索キーワード</div>
+        <div class="consent-item"><i class="ti ti-check"></i>閲覧したブース</div>
+        <div class="consent-item"><i class="ti ti-check"></i>AIコンシェルジュへの相談内容</div>
+        <div class="consent-item"><i class="ti ti-check"></i>会場での滞在時間</div>
+      </div>
+      <div class="consent-card">
+        <div class="consent-card-ttl"><i class="ti ti-shield-check" style="color:#0F6E56"></i>プライバシーについて</div>
+        <div class="consent-item"><i class="ti ti-lock"></i>氏名・連絡先・会社名は取得しません</div>
+        <div class="consent-item"><i class="ti ti-building"></i>「業態」のみ使用（個人特定なし）</div>
+        <div class="consent-item"><i class="ti ti-calendar"></i>保管期間：1年間</div>
+        <div class="consent-item"><i class="ti ti-trash"></i>いつでも削除請求可能</div>
+      </div>
+      <div class="consent-notice">
+        取得した情報は展示会の改善・出展社へのレポート提供に活用されます。<br>
+        個人を特定する情報は一切収集しません。
+      </div>
+    </div>
+    <div class="consent-btns">
+      <button class="consent-ok" onclick="agreeConsent()">同意して開始</button>
+      <button class="consent-skip" onclick="skipConsent()">同意しない（一部機能が制限されます）</button>
+    </div>
+  </div>`;
+}
+
+function agreeConsent() {
+  try { localStorage.setItem(CONSENT_KEY, '1'); } catch(e) {}
+  showQRScreen();
+}
+
+function skipConsent() {
+  // 同意なしでもアプリは使える（ログ記録のみ無効）
+  try { localStorage.setItem(CONSENT_KEY, '0'); } catch(e) {}
+  showHome();
+}
+
+// ============================================================
+// QRスキャン画面（入場証読み取り）
+// ============================================================
+let qrScanner = null;
+
+function showQRScreen() {
   document.getElementById('screen').innerHTML = `
   <div class="screen">
-    <div class="sub-hd">
-      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
-      <div class="sub-hd-ttl">AIコンシェルジュ</div>
-    </div>
-    <div class="ai-coming">
-      <div class="ai-coming-icon"><i class="ti ti-robot"></i></div>
-      <div class="ai-coming-ttl">準備中</div>
-      <div class="ai-coming-msg">何でも気軽にAIに相談できる機能です。<br>本番までに公開予定。</div>
-      <div class="ai-coming-examples">
-        <div class="aie">「生クリーム探してる」</div>
-        <div class="aie">「ホシザキの場所教えて」</div>
-        <div class="aie">「セミナーは何時から？」</div>
-        <div class="aie">「忘れ物したんですけど…」</div>
+    <div class="qr-wrap">
+      <div class="qr-icon">📷</div>
+      <div class="qr-ttl">入場証のQRを読み取る</div>
+      <div class="qr-sub">招待状に印刷されたQRコード（kd69-xxxx）を<br>カメラでスキャンしてください</div>
+      <div class="qr-scan-area" id="qrScanArea">
+        <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
+        <div class="qr-corner bl"></div><div class="qr-corner br"></div>
+        <div class="qr-scan-line"></div>
+        <div id="qrReader" style="width:100%;height:100%;border-radius:14px;overflow:hidden"></div>
+      </div>
+      <div style="font-size:12px;color:#73726c;margin:-4px 0 8px">または手動入力</div>
+      <div class="qr-manual">
+        <input id="qrManual" placeholder="例: kd69-0009330" 
+          style="text-transform:none"
+          onkeydown="if(event.key==='Enter')submitQR()">
+        <button class="qr-btn" onclick="submitQR()">
+          <i class="ti ti-login"></i> この番号で入場
+        </button>
+      </div>
+      <div style="margin-top:8px">
+        <button class="qr-skip" onclick="skipQR()">QRコードなし・スキップ</button>
       </div>
     </div>
   </div>`;
+
+  // カメラQR読み取り（jsQR使用）
+  startQRCamera();
+}
+
+function startQRCamera() {
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', true);
+  video.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:14px';
+  const reader = document.getElementById('qrReader');
+  if (!reader) return;
+  reader.appendChild(video);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  let scanning = true;
+
+  navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}})
+    .then(stream => {
+      video.srcObject = stream;
+      video.play();
+      window._qrStream = stream;
+      requestAnimationFrame(scanFrame);
+    })
+    .catch(() => {
+      if (reader) reader.innerHTML = '<div style="color:#888780;font-size:13px;padding:20px;text-align:center">カメラが利用できません<br>手動入力をご利用ください</div>';
+    });
+
+  function scanFrame() {
+    if (!scanning || !document.getElementById('qrReader')) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // jsQRが利用可能なら使用
+      if (typeof jsQR !== 'undefined') {
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code && code.data) {
+          scanning = false;
+          stopQRCamera();
+          processQRCode(code.data);
+          return;
+        }
+      }
+    }
+    requestAnimationFrame(scanFrame);
+  }
+}
+
+function stopQRCamera() {
+  if (window._qrStream) {
+    window._qrStream.getTracks().forEach(t => t.stop());
+    window._qrStream = null;
+  }
+}
+
+function submitQR() {
+  const val = (document.getElementById('qrManual').value || '').trim().toLowerCase();
+  if (!val) return;
+  stopQRCamera();
+  processQRCode(val);
+}
+
+function skipQR() {
+  stopQRCamera();
+  visitorGyotai = '';
+  visitorQRCode = 'SKIP';
+  saveVisitor();
+  showHome();
+}
+
+function processQRCode(code) {
+  const normalized = code.trim().toLowerCase();
+  // kd69-xxxxxxx 形式チェック
+  const gyotai = GYOTAI_MAP[normalized] || null;
+
+  stopQRCamera();
+  visitorQRCode  = normalized;
+  visitorGyotai  = gyotai || '';
+  saveVisitor();
+
+  // ログ送信
+  const consent = localStorage.getItem(CONSENT_KEY);
+  if (consent === '1') {
+    sendLog({ keyword: '[QR入場]', lang: lang, booth: normalized, found: gyotai ? 'あり' : 'なし', searchCount: 0 });
+  }
+
+  // 業態確認画面を表示してからホームへ
+  showGyotaiConfirm(gyotai, normalized);
+}
+
+function showGyotaiConfirm(gyotai, qr) {
+  const gyotaiDisplay = gyotai || '未判定（スキップしてください）';
+  document.getElementById('screen').innerHTML = `
+  <div class="screen" style="padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
+    <div style="font-size:56px">✅</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a18">入場が確認されました</div>
+    <div style="font-size:14px;color:#73726c">QRコード: ${escapeHtml(qr)}</div>
+    ${gyotai ? `<div><div style="font-size:13px;color:#73726c;margin-bottom:6px">あなたの業態</div>
+      <span class="business-tag" style="font-size:15px;padding:6px 18px">${escapeHtml(gyotai)}</span></div>` 
+    : `<div style="font-size:13px;color:#E24B4A">業態を認識できませんでした</div>`}
+    <div style="font-size:12px;color:#888780;line-height:1.6">AIコンシェルジュが業態に合わせた<br>回答を提供します</div>
+    <button onclick="showHome()" style="width:100%;max-width:300px;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px">
+      <i class="ti ti-arrow-right"></i> ガイドを開始する
+    </button>
+  </div>`;
+}
+
+// ============================================================
+// AIコンシェルジュ（OpenAI GPT本実装）
+// ============================================================
+function showAIConcierge() {
+  aiHistory = [];  // 会話リセット
+  actionLog.aiQueries++;
+  saveActionLog();
+
+  const bizBadge = visitorGyotai
+    ? `<div class="ai-biz-badge">業態: ${escapeHtml(visitorGyotai)}</div>`
+    : '';
+
+  const examples = [
+    '生クリームを探してる',
+    'ホシザキの場所を教えて',
+    'セミナーは何時から？',
+    'おすすめの機械は？',
+  ];
+
+  const exHtml = examples.map(e =>
+    `<button onclick="aiSendExample('${escapeJsAttr(e)}')" style="background:#f5f5f3;border:none;padding:9px 14px;border-radius:20px;font-size:13px;color:#444441;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent">${e}</button>`
+  ).join('');
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen ai-wrap" style="height:calc(100vh - 56px);height:calc(100dvh - 56px)">
+    <div class="res-hdr">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">AIコンシェルジュ</div>
+      <button onclick="aiHistory=[];showAIConcierge()" style="background:none;border:none;color:#73726c;font-size:12px;cursor:pointer;padding:4px 8px">リセット</button>
+    </div>
+    <div class="ai-msgs" id="aiMsgs">
+      <div style="text-align:center;padding:8px 0 4px">${bizBadge}</div>
+      <div class="ai-msg bot">
+        <div class="ai-bubble">こんにちは！丸菱グループ総合展2026のAIコンシェルジュです。${visitorGyotai ? `<br><strong>${escapeHtml(visitorGyotai)}</strong>に合わせてご案内します。` : ''}何でもご相談ください 😊</div>
+        <div class="ai-time" id="aiWelcomeTime"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:4px 0">${exHtml}</div>
+    </div>
+    <div class="ai-input-row">
+      <textarea class="ai-inp" id="aiInp" placeholder="何でも聞いてください..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend()}"
+        oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+      <button class="ai-send" id="aiSendBtn" onclick="aiSend()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>`;
+
+  // 時刻表示
+  document.getElementById('aiWelcomeTime').textContent = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  setTimeout(() => document.getElementById('aiInp') && document.getElementById('aiInp').focus(), 300);
+}
+
+function aiSendExample(text) {
+  const inp = document.getElementById('aiInp');
+  if (inp) inp.value = text;
+  aiSend();
+}
+
+function aiSend() {
+  const inp = document.getElementById('aiInp');
+  if (!inp) return;
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  // ユーザーメッセージ表示
+  appendAiMsg('user', msg);
+  aiHistory.push({role: 'user', content: msg});
+
+  // ローディング表示
+  const loadId = 'aiLoad_' + Date.now();
+  appendAiMsg('bot', '...', loadId);
+  document.getElementById('aiSendBtn').disabled = true;
+
+  // ログ
+  logKeyword('[AI] ' + msg);
+
+  callOpenAI(msg).then(reply => {
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) loadEl.textContent = reply;
+    aiHistory.push({role: 'assistant', content: reply});
+    document.getElementById('aiSendBtn').disabled = false;
+
+    // リード化の機会を検出（見積・詳細・サンプル系）
+    if (/見積|詳しく|サンプル|資料|連絡|問い合わせ/.test(msg + reply)) {
+      appendLeadCard(loadEl);
+    }
+    scrollAiToBottom();
+  }).catch(err => {
+    const loadEl = document.getElementById(loadId);
+    if (loadEl) loadEl.textContent = '申し訳ございません、一時的にご利用できません。「ブースを探す」から検索をお試しください。';
+    document.getElementById('aiSendBtn').disabled = false;
+  });
+}
+
+async function callOpenAI(userMsg) {
+  // 出展社リスト（上位60社をコンテキストに）
+  const boothContext = P.slice(0, 60).map(p =>
+    `${p.booth} ${p.company}：${(p.tags||[]).slice(0,5).join('、')}`
+  ).join('\n');
+
+  const seminarsContext = SEMINARS.map(s =>
+    `[${s.date} ${s.time}] ${s.title}（${s.venue}・${s.reservation}）`
+  ).join('\n');
+
+  const gyotaiCtx = GYOTAI_CONTEXT[visitorGyotai] || GYOTAI_CONTEXT[''];
+
+  const systemPrompt = `あなたは「丸菱グループ 第37回食品機械と原材料 総合展2026」（6/10-11、マリンメッセ福岡A館）の来場者向けAIコンシェルジュです。
+
+【来場者情報】
+業態: ${visitorGyotai || '不明'}
+${gyotaiCtx}
+
+【会場の出展社（抜粋）】
+${boothContext}
+
+【セミナー・実演スケジュール】
+${seminarsContext}
+
+【施設情報】
+- 出入口: 南側（A出口）
+- 2Fセミナー会場: 階段で上がる
+- 総合案内: 会場中央
+- フードコーナー・ドリンクコーナー: 北側
+- アウトレット市: 北西角
+- 忘れ物・緊急連絡: 総合案内へ
+
+【回答ルール】
+1. 業態に合わせた専門的なアドバイスをする（${visitorGyotai || '全業態向け'}視点）
+2. 出展社を案内する際は必ずブース番号を添える（例: ホシザキ C11）
+3. 複数の関連出展社があれば3社程度提案する
+4. 場所を聞かれたら「MAPで見る」ことを促す
+5. 見積・詳細希望には丸菱営業担当への連携を提案する
+6. 回答は簡潔に。200文字以内を目安にする
+7. 日本語で回答する`;
+
+  // ── GASプロキシ経由でOpenAI呼び出し（APIキーはGAS側スクリプトプロパティに保管）──
+  const payload = {
+    action: 'ai',
+    messages: JSON.stringify([
+      {role: 'system', content: systemPrompt},
+      ...aiHistory.slice(-6),
+    ]),
+    gyotai:  visitorGyotai,
+    session: SESSION_ID,
+  };
+
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: Object.entries(payload).map(([k,v]) => encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&'),
+  });
+
+  if (!res.ok) throw new Error('GAS proxy error: ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.reply || demoAIResponse(userMsg);
+}
+
+// デモ用応答（API Key未設定時）
+function demoAIResponse(msg) {
+  const m = msg.toLowerCase();
+  // 出展社検索を代替
+  if (P && P.length > 0) {
+    const qNorm = msg.replace(/[　\s]/g,'').toLowerCase();
+    const hits = P.filter(p => (p.tags||[]).some(t => qNorm.indexOf(t.toLowerCase())>=0 || t.toLowerCase().indexOf(qNorm)>=0)).slice(0,3);
+    if (hits.length > 0) {
+      const list = hits.map(p => `• ${p.booth} ${p.company}`).join('\n');
+      return `「${msg}」に関連する出展社をご案内します:\n${list}\n\n詳細はブース番号でMAPをご確認ください。`;
+    }
+  }
+  if (/セミナー|実演/.test(m)) {
+    const s = SEMINARS[0];
+    return s ? `セミナーは${s.date} ${s.time}〜「${s.title}」（${s.venue}・${s.reservation}）などがございます。セミナータブで全スケジュールをご確認ください。` : 'セミナー情報はセミナー・実演タブをご確認ください。';
+  }
+  if (/忘れ|落とした|なくし/.test(m)) {
+    return '忘れ物・遺失物は会場中央の**総合案内**までお申し出ください。スタッフが対応いたします。';
+  }
+  if (/トイレ|wc|お手洗い/.test(m)) {
+    return 'お手洗いは会場の四隅（東西の出入口付近）にございます。会場MAPでご確認いただけます。';
+  }
+  return `「${msg}」についてお調べします。現在AIキーが未設定のためデモモードで動作しています。「ブースを探す」から検索もご利用ください。`;
+}
+
+function appendAiMsg(role, text, id) {
+  const msgs = document.getElementById('aiMsgs');
+  if (!msgs) return;
+  const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  const bubbleClass = text === '...' ? 'ai-bubble loading' : 'ai-bubble';
+  div.innerHTML = `<div class="${bubbleClass}"${id ? ' id="'+id+'"' : ''}>${escapeHtml(text).replace(/\n/g,'<br>')}</div><div class="ai-time">${now}</div>`;
+  msgs.appendChild(div);
+  scrollAiToBottom();
+}
+
+function appendLeadCard(afterEl) {
+  if (!afterEl) return;
+  const card = document.createElement('div');
+  card.className = 'ai-lead-card';
+  card.innerHTML = `<div class="ai-lead-ttl">💼 丸菱営業担当へのご連絡</div>
+    <div style="font-size:12px;color:#444441">より詳しい情報・お見積もりをご希望でしたら、展示会後に担当よりご連絡いたします。</div>
+    <div class="ai-lead-btns">
+      <button class="ai-lead-btn ai-lead-yes" onclick="aiRequestContact()">連絡を希望する</button>
+      <button class="ai-lead-btn ai-lead-no" onclick="this.closest('.ai-lead-card').remove()">いいえ</button>
+    </div>`;
+  afterEl.closest('.ai-msg').after(card);
+  scrollAiToBottom();
+}
+
+function aiRequestContact() {
+  // GASに問い合わせ記録
+  const lastQ = aiHistory.filter(h=>h.role==='user').slice(-1)[0]?.content || '';
+  sendLog({ keyword: '[問い合わせ希望] ' + lastQ, lang, booth: '', found: 'あり', searchCount: actionLog.aiQueries });
+  // カードを確認メッセージに置換
+  const card = document.querySelector('.ai-lead-card');
+  if (card) card.innerHTML = '<div style="text-align:center;color:#0F6E56;font-size:13px;padding:4px">✅ 承りました。展示会後に担当よりご連絡いたします。</div>';
+}
+
+function scrollAiToBottom() {
+  const msgs = document.getElementById('aiMsgs');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
 
 // マイメモ一覧
@@ -1394,14 +1966,18 @@ function search(q, label, excludeBusiness) {
     .slice(0, 20)
     .map(r => Object.assign({}, r.item, { score: r.score, matchedTags: r.matched }));
 
-  // アンケート用ブース履歴
+  // アンケート用ブース履歴 & actionLog
   top.forEach(r => {
     if (visitedBooths.indexOf(r.booth) < 0) visitedBooths.push(r.booth);
+    logBooth(r.booth, r.company);
   });
+  logKeyword(q);
 
-  // ログ記録
+  // ログ記録（同意者のみ）
   const booths = top.map(r => r.booth).join(',');
-  sendLog({ keyword: q, lang: lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount: searchCount });
+  if (localStorage.getItem(CONSENT_KEY) === '1') {
+    sendLog({ keyword: q, lang: lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount: searchCount, gyotai: visitorGyotai, qr: visitorQRCode });
+  }
 
   showResults(top, label);
 }
@@ -1411,11 +1987,13 @@ function sendLog(params) {
   const url = GAS_URL + '?action=log'
     + '&keyword=' + encodeURIComponent(params.keyword)
     + '&lang='    + encodeURIComponent(lang)
-    + '&booth='   + encodeURIComponent(params.booth)
+    + '&booth='   + encodeURIComponent(params.booth || '')
     + '&found='   + encodeURIComponent(params.found)
-    + '&searchCount=' + params.searchCount
-    + '&session=' + SESSION_ID;
-  fetch(url).catch(() => {});  // エラーは無視
+    + '&searchCount=' + (params.searchCount || 0)
+    + '&session=' + SESSION_ID
+    + '&gyotai='  + encodeURIComponent(params.gyotai || visitorGyotai)
+    + '&qr='      + encodeURIComponent(params.qr || visitorQRCode);
+  fetch(url).catch(() => {});
 }
 
 // ============================================================
@@ -1489,6 +2067,128 @@ function submitSurvey() {
     <div style="font-size:48px">🎉</div>
     <div class="ld-txt" style="font-size:18px;font-weight:600;color:#1a1a18">ありがとうございました！</div>
     <div class="ld-txt">またのご来場をお待ちしています</div>
+  </div>`;
+}
+
+// ============================================================
+// 退場レポート
+// ============================================================
+function showExitReport() {
+  const elapsed  = Math.floor((Date.now() - appStartTime) / 60000);
+  const hours    = Math.floor(elapsed / 60);
+  const minutes  = elapsed % 60;
+  const timeStr  = hours > 0 ? `${hours}時間${minutes}分` : `${minutes}分`;
+
+  const kws      = actionLog.searchKeywords.slice(-12);
+  const booths   = actionLog.viewedBooths.slice(0, 10);
+  const memoCount= myMemos.length;
+
+  const kwHtml = kws.length
+    ? kws.map(k => `<span class="report-kw">${escapeHtml(k.q.replace(/^\[AI\] /,''))}</span>`).join('')
+    : '<span style="color:#888780;font-size:13px">検索なし</span>';
+
+  const boothHtml = booths.length
+    ? booths.map(b => `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #e8e7e1;font-size:13px">
+        <span style="background:#FAEEDA;color:#854F0B;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0">${escapeHtml(b.booth)}</span>
+        <span>${escapeHtml(b.company)}</span>
+      </div>`).join('')
+    : '<div style="color:#888780;font-size:13px">閲覧なし</div>';
+
+  const bizHtml = visitorGyotai
+    ? `<span class="business-tag">${escapeHtml(visitorGyotai)}</span>`
+    : '';
+
+  let reportSat = 0;
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="res-hdr">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">本日の足跡</div>
+    </div>
+    <div class="report-wrap">
+      <div class="report-hero">
+        <div class="report-hero-ttl">🎉 総合展2026 お疲れさまでした！</div>
+        <div class="report-hero-sub">2026年6月 マリンメッセ福岡A館 ${bizHtml}</div>
+      </div>
+
+      <div class="report-stats">
+        <div class="rstat"><div class="rstat-num">${kws.length}</div><div class="rstat-lbl">🔍 検索回数</div></div>
+        <div class="rstat"><div class="rstat-num">${booths.length}</div><div class="rstat-lbl">👀 閲覧ブース</div></div>
+        <div class="rstat"><div class="rstat-num">${memoCount}</div><div class="rstat-lbl">📝 マイメモ</div></div>
+        <div class="rstat"><div class="rstat-num">${timeStr}</div><div class="rstat-lbl">⏱ 滞在時間</div></div>
+      </div>
+
+      <div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-search" style="color:#0F6E56"></i>検索キーワード</div>
+        <div class="report-kw-list">${kwHtml}</div>
+      </div>
+
+      <div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-building" style="color:#185FA5"></i>閲覧したブース（上位10）</div>
+        ${boothHtml}
+      </div>
+
+      ${memoCount > 0 ? `<div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-notebook" style="color:#534AB7"></i>マイメモ（${memoCount}件）</div>
+        <div style="font-size:13px;color:#73726c">マイメモタブで確認・メール送信できます</div>
+        <button onclick="showMyMemo()" style="margin-top:8px;background:#534AB7;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">マイメモを見る</button>
+      </div>` : ''}
+
+      <div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-mood-smile" style="color:#993556"></i>本日の満足度</div>
+        <div class="satisfaction-row" id="satRow">
+          <button class="sat-btn" onclick="setSat(5,this)">🤩</button>
+          <button class="sat-btn" onclick="setSat(4,this)">😄</button>
+          <button class="sat-btn" onclick="setSat(3,this)">😊</button>
+          <button class="sat-btn" onclick="setSat(2,this)">😐</button>
+          <button class="sat-btn" onclick="setSat(1,this)">😢</button>
+        </div>
+        <button class="report-submit" onclick="submitExitReport()">
+          <i class="ti ti-send"></i> 送信して終了
+        </button>
+      </div>
+    </div>
+  </div>`;
+
+  window._reportSat = 0;
+}
+
+function setSat(v, btn) {
+  window._reportSat = v;
+  document.querySelectorAll('.sat-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function submitExitReport() {
+  const rating = window._reportSat || 0;
+  const kws    = actionLog.searchKeywords.map(k => k.q).join(',');
+  const booths = actionLog.viewedBooths.map(b => b.booth).join(',');
+  const elapsed = Math.floor((Date.now() - appStartTime) / 60000);
+
+  // GASに記録
+  const url = GAS_URL + '?action=survey'
+    + '&rating='      + rating
+    + '&booths='      + encodeURIComponent(booths)
+    + '&searchCount=' + actionLog.searchKeywords.length
+    + '&session='     + SESSION_ID
+    + '&gyotai='      + encodeURIComponent(visitorGyotai)
+    + '&elapsed='     + elapsed
+    + '&keywords='    + encodeURIComponent(kws.slice(0,200));
+  fetch(url).catch(() => {});
+
+  // セッションデータをクリア
+  try { sessionStorage.removeItem('sogoten2026_actions'); } catch(e) {}
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen ld-screen" style="padding:80px 24px;text-align:center">
+    <div style="font-size:64px">🎉</div>
+    <div style="font-size:20px;font-weight:700;color:#1a1a18;margin-top:12px">ありがとうございました！</div>
+    <div style="font-size:14px;color:#73726c;margin-top:8px;line-height:1.6">またのご来場をお待ちしています<br>丸菱グループ 総合展2026</div>
+    <div style="margin-top:32px;padding:16px;background:#f5f5f3;border-radius:12px;font-size:12px;color:#73726c;line-height:1.6">
+      マイメモはメール送信機能で<br>あなたのPCへ転送できます
+    </div>
+    ${myMemos.length > 0 ? `<button onclick="showMyMemo()" style="margin-top:16px;background:#534AB7;color:#fff;border:none;padding:13px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">📝 メモを送信する</button>` : ''}
   </div>`;
 }
 
