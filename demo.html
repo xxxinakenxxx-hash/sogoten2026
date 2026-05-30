@@ -698,8 +698,21 @@ window.addEventListener('load', async () => {
   initFuse();
 
   // 起動フロー判定
+  const params = new URLSearchParams(location.search);
+
+  // ?reset=1 でlocalStorage・sessionStorageをクリアして同意画面から再スタート
+  if (params.get('reset') === '1') {
+    try { localStorage.clear(); } catch(e){}
+    try { sessionStorage.clear(); } catch(e){}
+    history.replaceState({}, '', location.pathname + (params.get('dev')==='1' ? '?dev=1' : ''));
+    visitorGyotai = '';
+    visitorQRCode = '';
+    showConsentScreen();
+    return;
+  }
+
   // ?dev=1 で同意・QRをスキップ（開発用）
-  if (new URLSearchParams(location.search).get('dev') === '1') {
+  if (params.get('dev') === '1') {
     visitorGyotai = 'パン製造業';
     visitorQRCode = 'dev';
     saveVisitor();
@@ -817,6 +830,11 @@ function showHome() {
       <button onclick="showExitReport()" style="width:100%;padding:12px;background:#1a1a18;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
         <i class="ti ti-chart-bar"></i> 退場レポート（本日の足跡）
       </button>
+    </div>
+    <div style="padding:0 16px 16px;text-align:center">
+      <a href="?reset=1" style="font-size:11px;color:#b4b2a9;text-decoration:none">
+        ⚙️ 同意・QR画面を再確認（開発用）
+      </a>
     </div>
   </div>`;
 }
