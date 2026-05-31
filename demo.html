@@ -1378,27 +1378,26 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
     }
   }
 
-  // ブース番号がある → AI提案ブースリストとして表示
+  // ブース番号がある → 既存のブース一覧画面に飛ぶボタンを設置
   if (foundBooths.length > 0) {
     const matched = foundBooths
       .map(id => P.find(p => (p.booth || '').replace(/\s/g, '').toUpperCase() === id))
       .filter(p => p);
     if (matched.length > 0) {
-      const card = document.createElement('div');
-      card.style.cssText = 'margin-top:10px;background:#fff;border:1.5px solid #0F6E56;border-radius:12px;padding:10px 12px';
-      const header = '<div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;display:flex;align-items:center;gap:5px"><i class="ti ti-sparkles"></i> AIが案内したブース（' + matched.length + '件）</div>';
-      const rows = matched.map(p =>
-        '<div onclick="showMapScreen(\''+ escapeHtml(p.booth).replace(/\s/g,'') +'\')" style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #eee;cursor:pointer;-webkit-tap-highlight-color:transparent">'
-          + '<span style="background:#FAEEDA;color:#854F0B;font-weight:700;padding:3px 8px;border-radius:6px;font-size:12px;flex-shrink:0;min-width:36px;text-align:center">' + escapeHtml(p.booth) + '</span>'
-          + '<span style="font-size:13px;color:#1a1a18;flex:1">' + escapeHtml(p.company || '') + '</span>'
-          + '<i class="ti ti-chevron-right" style="color:#b4b2a9;font-size:14px"></i>'
-        + '</div>'
-      ).join('');
-      card.innerHTML = header + rows;
-      // 最後の行のborder削除
-      afterEl.closest('.ai-msg').appendChild(card);
-      const lastRow = card.lastElementChild;
-      if (lastRow && lastRow.style) lastRow.style.borderBottom = 'none';
+      // ボタン押下時に開くため、結果セットをwindowに保持
+      const slotKey = '_aiResults_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+      window[slotKey] = matched;
+
+      const btn = document.createElement('button');
+      btn.style.cssText = 'margin-top:10px;width:100%;background:#fff;border:1.5px solid #0F6E56;color:#0F6E56;font-size:14px;font-weight:600;padding:12px 14px;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;-webkit-tap-highlight-color:transparent';
+      btn.innerHTML =
+        '<span style="display:flex;align-items:center;gap:8px"><i class="ti ti-sparkles" style="font-size:16px"></i>AIが案内したブース（' + matched.length + '件）を見る</span>'
+        + '<i class="ti ti-chevron-right" style="font-size:16px"></i>';
+      btn.onclick = function() {
+        const results = window[slotKey] || [];
+        showResults(results, 'AIが案内したブース');
+      };
+      afterEl.closest('.ai-msg').appendChild(btn);
       return;
     }
   }
