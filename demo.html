@@ -1559,9 +1559,33 @@ function showMachineMenu() {
   </div>`;
 }
 
+// セミナーが完了済みかを判定（開始から1時間経過、または日付が過ぎている）
+function isSeminarDone(s) {
+  const now = new Date();
+  // 日付を解析（'6/10' → 2026/6/10）
+  const m = String(s.date || '').match(/(\d+)\/(\d+)/);
+  if (!m) return false;
+  const month = parseInt(m[1], 10);
+  const day = parseInt(m[2], 10);
+  const year = 2026;
+  // 当日の0時を基準に、日付がすでに過去なら非表示
+  const seminarDay = new Date(year, month - 1, day);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (seminarDay < today) return true;
+  // 同日で時刻指定がある場合は開始1時間後で非表示。'随時'は終日表示。
+  if (seminarDay.getTime() === today.getTime()) {
+    const tm = String(s.time || '').match(/(\d+):(\d+)/);
+    if (!tm) return false; // '随時'など
+    const start = new Date(year, month - 1, day, parseInt(tm[1],10), parseInt(tm[2],10));
+    const oneHourAfter = new Date(start.getTime() + 60 * 60 * 1000);
+    return now >= oneHourAfter;
+  }
+  return false;
+}
+
 function showSeminars() {
   const byDate = {};
-  SEMINARS.forEach(s => {
+  SEMINARS.filter(s => !isSeminarDone(s)).forEach(s => {
     if (!byDate[s.date]) byDate[s.date] = [];
     byDate[s.date].push(s);
   });
