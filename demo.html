@@ -1201,12 +1201,12 @@ function aiSend() {
 
   callOpenAI(msg).then(reply => {
     const loadEl = document.getElementById(loadId);
-    if (loadEl) loadEl.textContent = reply;
+    if (loadEl) loadEl.innerHTML = formatAIReply(reply);
     aiHistory.push({role: 'assistant', content: reply});
     document.getElementById('aiSendBtn').disabled = false;
 
-    // ブース検索ショートカットボタンを追加
-    appendSearchShortcut(loadEl, msg);
+    // AI回答に含まれるブース番号からブース一覧を生成
+    appendSearchShortcut(loadEl, msg, reply);
 
     // リード化の機会を検出（見積・詳細・サンプル系）
     if (/見積|詳しく|サンプル|資料|連絡|問い合わせ/.test(msg + reply)) {
@@ -1355,16 +1355,57 @@ function appendAiMsg(role, text, id) {
   scrollAiToBottom();
 }
 
-function appendSearchShortcut(afterEl, userMsg) {
+function appendSearchShortcut(afterEl, userMsg, aiReply) {
   if (!afterEl) return;
   // セミナー系・挨拶系はスキップ
-  if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|場所.*ト|忘れ|トイレ/.test(userMsg)) return;
+  if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|忘れ|トイレ/.test(userMsg)) return;
 
-  // タグマスタ辞書からヒットする単語を抽出
-  // ユーザー文の中に存在する「タグ語」をすべて拾い、最大2つまでをキーワードに
-  const matched = extractTagKeywords(userMsg, 2);
+  // AI回答からブース番号を抽出（A85, B03, C12, D04 など）
+  const boothRegex = /\b([A-D])\s*0*([1-9][0-9]?)\b/g;
+  const foundBooths = [];
+  const seen = new Set();
+  if (aiReply) {
+    let m;
+    while ((m = boothRegex.exec(aiReply)) !== null) {
+      // ゼロパディング正規化: A5 → A05, A85 → A85
+      const letter = m[1];
+      const num = m[2].padStart(2, '0');
+      const id = letter + num;
+      if (!seen.has(id)) {
+        seen.add(id);
+        foundBooths.push(id);
+      }
+    }
+  }
+
+  // ブース番号がある → AI提案ブースリストとして表示
+  if (foundBooths.length > 0) {
+    const matched = foundBooths
+      .map(id => P.find(p => (p.booth || '').replace(/\s/g, '').toUpperCase() === id))
+      .filter(p => p);
+    if (matched.length > 0) {
+      const card = document.createElement('div');
+      card.style.cssText = 'margin-top:10px;background:#fff;border:1.5px solid #0F6E56;border-radius:12px;padding:10px 12px';
+      const header = '<div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;display:flex;align-items:center;gap:5px"><i class="ti ti-sparkles"></i> AIが案内したブース（' + matched.length + '件）</div>';
+      const rows = matched.map(p =>
+        '<div onclick="showMapScreen(\''+ escapeHtml(p.booth).replace(/\s/g,'') +'\')" style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #eee;cursor:pointer;-webkit-tap-highlight-color:transparent">'
+          + '<span style="background:#FAEEDA;color:#854F0B;font-weight:700;padding:3px 8px;border-radius:6px;font-size:12px;flex-shrink:0;min-width:36px;text-align:center">' + escapeHtml(p.booth) + '</span>'
+          + '<span style="font-size:13px;color:#1a1a18;flex:1">' + escapeHtml(p.company || '') + '</span>'
+          + '<i class="ti ti-chevron-right" style="color:#b4b2a9;font-size:14px"></i>'
+        + '</div>'
+      ).join('');
+      card.innerHTML = header + rows;
+      // 最後の行のborder削除
+      afterEl.closest('.ai-msg').appendChild(card);
+      const lastRow = card.lastElementChild;
+      if (lastRow && lastRow.style) lastRow.style.borderBottom = 'none';
+      return;
+    }
+  }
+
+  // ブース番号がない場合のみ、従来のキーワード抽出ボタンを出す
+  const matched = extractTagKeywords(userMsg + ' ' + (aiReply || ''), 2);
   if (matched.length === 0) return;
-
   const q = matched.join(' ');
 
   const btn = document.createElement('button');
@@ -1372,6 +1413,25 @@ function appendSearchShortcut(afterEl, userMsg) {
   btn.innerHTML = '<i class="ti ti-search" style="font-size:13px"></i> 「' + escapeHtml(q) + '」でブース一覧を見る';
   btn.onclick = function() { search(q, q); };
   afterEl.closest('.ai-msg').appendChild(btn);
+}
+
+// AI応答の整形
+// - HTMLエスケープ
+// - マークダウンの **strong** を <strong> に変換
+// - 番号付きリストや「・」「-」の前に改行を入れる
+// - 改行を <br> に変換
+function formatAIReply(text) {
+  if (!text) return '';
+  let t = escapeHtml(text);
+  // 番号付きリスト（1.〜9.）の手前に改行を強制
+  t = t.replace(/(?:\s|^)([1-9][0-9]?\.)(?=\s*\*?\*?[^\d])/g, '\n$1');
+  // ハイフン・中点箇条書きの手前に改行
+  t = t.replace(/(?:\s)(-\s|・|•\s)/g, '\n$1');
+  // マークダウン **強調**
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // 改行 → <br>
+  t = t.replace(/\n/g, '<br>');
+  return t;
 }
 
 // タグマスタ全体から、ユーザー文に出現する語を長い順に抽出
