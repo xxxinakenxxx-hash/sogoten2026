@@ -437,6 +437,7 @@ let aiHistory = [];  // [{role:'user'|'assistant', content:'...'}]
 // 商品データ（GASから取得 or フォールバック）
 let P = [];
 let SEMINARS = [];
+let AI_DOC = [];  // AI補助資料
 let VENUE_SVG_INNER = '';  // venue_map.svgの中身（fetchで取得）
 
 // ============================================================
@@ -725,9 +726,10 @@ window.addEventListener('load', async () => {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10000);
-    const [prodRes, semRes] = await Promise.all([
+    const [prodRes, semRes, docRes] = await Promise.all([
       fetch(GAS_URL + '?action=products', {signal: ctrl.signal}),
       fetch(GAS_URL + '?action=seminar',  {signal: ctrl.signal}),
+      fetch(GAS_URL + '?action=aidoc',    {signal: ctrl.signal}).catch(() => null),
     ]);
     clearTimeout(timer);
     const prodData = await prodRes.json();
@@ -740,6 +742,16 @@ window.addEventListener('load', async () => {
     if (semData.seminars && semData.seminars.length > 0) {
       SEMINARS = semData.seminars;
     }
+    // AI補助資料（失敗してもアプリは動作する）
+    try {
+      if (docRes) {
+        const docData = await docRes.json();
+        if (docData.items && docData.items.length > 0) {
+          AI_DOC = docData.items;
+          console.log('✅ AI補助資料取得: ' + AI_DOC.length + '件');
+        }
+      }
+    } catch(e) { console.warn('AI補助資料取得失敗:', e.message); }
   } catch (e) {
     console.warn('GAS未接続。サンプルデータで動作。', e.message);
   }
@@ -1208,10 +1220,7 @@ function aiSend() {
     // AI回答に含まれるブース番号からブース一覧を生成
     appendSearchShortcut(loadEl, msg, reply);
 
-    // リード化の機会を検出（見積・詳細・サンプル系）
-    if (/見積|詳しく|サンプル|資料|連絡|問い合わせ/.test(msg + reply)) {
-      appendLeadCard(loadEl);
-    }
+    // 連絡カード機能は削除（マイメモ→出展社問い合わせ機能で代替）
     scrollAiToBottom();
   }).catch(err => {
     const loadEl = document.getElementById(loadId);
@@ -1250,8 +1259,28 @@ async function callOpenAI(userMsg) {
   ).join('\n');
 
   const seminarsContext = SEMINARS.map(s =>
-    `[${s.date} ${s.time}] ${s.title}（${s.venue}・${s.reservation}）`
+    `[${s.date} ${s.time}/${s.type||'セミナー'}] ${s.title}${s.speaker ? '／登壇: '+s.speaker : ''}（${s.venue}・${s.reservation}）`
   ).join('\n');
+
+  // AI補助資料：カテゴリ別にグルーピング
+  let aiDocContext = '';
+  if (AI_DOC && AI_DOC.length > 0) {
+    const byCat = {};
+    AI_DOC.forEach(item => {
+      if (!byCat[item.category]) byCat[item.category] = [];
+      byCat[item.category].push(item);
+    });
+    const parts = [];
+    Object.keys(byCat).forEach(cat => {
+      parts.push('■ ' + cat);
+      byCat[cat].forEach(item => {
+        let line = '・' + item.topic + ': ' + item.content;
+        if (item.hint) line += '\n  [回答時のヒント] ' + item.hint;
+        parts.push(line);
+      });
+    });
+    aiDocContext = parts.join('\n');
+  }
 
   const gyotaiCtx = GYOTAI_CONTEXT[visitorGyotai] || GYOTAI_CONTEXT[''];
 
@@ -1267,6 +1296,7 @@ ${boothContext}
 【セミナー・実演スケジュール】
 ${seminarsContext}
 
+${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDocContext + '\n' : ''}
 【施設情報】
 - 出入口: 南側（A出口）
 - 2Fセミナー会場: 階段で上がる
