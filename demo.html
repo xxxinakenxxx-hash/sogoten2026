@@ -2130,6 +2130,7 @@ function search(q, label, excludeBusiness, fixedBooths) {
         + '<div style="font-weight:600;color:#0F6E56;margin-bottom:6px">&#x1F916; AIコンシェルジュの提案</div>'
         + '<div style="color:#1a1a18">' + escapeHtml(reply).replace(/\n/g,'<br>') + '</div>'
         + '</div>';
+    }).catch(() => {});
     return;
   }
 
