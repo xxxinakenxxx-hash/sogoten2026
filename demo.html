@@ -1361,7 +1361,7 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
   if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|忘れ|トイレ/.test(userMsg)) return;
 
   // AI回答からブース番号を抽出（A85, B03, C12, D04 など）
-  const boothRegex = /\b([A-D])\s*0*([1-9][0-9]?)\b/g;
+  const boothRegex = /([A-D])\s*0*([1-9][0-9]?)(?![0-9])/g;
   const foundBooths = [];
   const seen = new Set();
   if (aiReply) {
