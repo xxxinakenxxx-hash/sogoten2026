@@ -162,6 +162,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .mm-btn-cancel{background:#f5f5f3;color:#73726c}
 .mm-btn-save{background:#534AB7;color:#fff}
 .mm-btn-save:active{opacity:.85}
+.mm-btn-save:disabled{background:#d3d1c7;cursor:not-allowed}
+.mm-section-label{font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:8px;margin-top:4px}
 
 /* === 検索結果カードのメモボタン === */
 .rc-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -934,7 +936,7 @@ function showConsentScreen() {
         <span id="accArr" style="font-size:18px;color:#73726c;transition:transform .2s;line-height:1">&#8964;</span>
       </button>
       <div id="consentDetail" style="display:none;font-size:12px;color:#444441;line-height:1.9;background:#f9f9f7;border:1px solid #e8e7e1;border-radius:10px;padding:14px 16px;margin-bottom:8px">
-        <p>株式会社丸菱ホールディングスおよびその関連会社（以下「当社」）は、本アプリを通じて取得した検索キーワード、閲覧ブース情報、AIへの相談内容その他の情報を、展示会の運営改善、出展社へのレポート提供およびサービス品質向上のために利用します。氏名・会社名・連絡先等、お客様を特定する情報は取得しません。</p>
+        <p>株式会社丸菱ホールディングスおよびその関連会社（以下「当社」）は、本アプリを通じて取得した検索キーワード、閲覧ブース情報、AIへの相談内容、メモ・問い合わせ内容その他の情報を、展示会の運営改善、出展社へのレポート提供およびサービス品質向上のために利用します。問い合わせ機能をご利用の場合、入力いただいた会社名・氏名・連絡先等を出展社および丸菱営業に提供することにご同意いただいたものとみなします（招待状記載の第三者提供条件に準じます）。</p>
         <br>
         <p>入力内容の一部または全部は、AIによる回答生成を目的として当社が利用するAIサービスに送信される場合があります。AIの回答には不正確な内容が含まれる可能性があります。最終的な判断はお客様ご自身でお願いします。</p>
         <br>
@@ -1443,11 +1445,20 @@ function openMemoEditor(booth, company) {
         <div class="mm-booth">${booth}</div>
         <div class="mm-company">${escapeHtml(company)}</div>
       </div>
-      <textarea id="memoText" class="mm-textarea" placeholder="例：個包装の少量パック詳細聞く、価格表もらった、来週見積もり依頼" rows="5">${escapeHtml(currentMemo)}</textarea>
+      <div class="mm-section-label">📝 自分用メモ</div>
+      <textarea id="memoText" class="mm-textarea" placeholder="例：個包装の少量パック詳細聞く、価格表もらった、来週見積もり依頼" rows="3">${escapeHtml(currentMemo)}</textarea>
       <div class="mm-mic-row">
-        <button class="mm-mic-btn" id="memoMicBtn" onclick="toggleMemoMic()"><i class="ti ti-microphone"></i> 音声入力</button>
+        <button class="mm-mic-btn" id="memoMicBtn" onclick="toggleMemoMic('memoText')"><i class="ti ti-microphone"></i> 音声入力</button>
         <div class="mm-note">空欄でも「気になる」として保存されます</div>
       </div>
+
+      <div class="mm-section-label" style="margin-top:14px">📨 出展社への問い合わせ（任意）</div>
+      <textarea id="inquiryText" class="mm-textarea" placeholder="例：詳しい資料が欲しい / 見積もりをお願いしたい / 商談を希望" rows="3"></textarea>
+      <div class="mm-mic-row">
+        <button class="mm-mic-btn" id="inquiryMicBtn" onclick="toggleMemoMic('inquiryText')"><i class="ti ti-microphone"></i> 音声入力</button>
+        <div class="mm-note">入力すると次画面で連絡先入力に進みます</div>
+      </div>
+
       <div class="mm-actions">
         <button class="mm-btn mm-btn-cancel" onclick="closeMemoEditor()">キャンセル</button>
         <button class="mm-btn mm-btn-save" onclick="saveMemoFromModal('${booth}','${escapeJsAttr(company)}')">保存</button>
@@ -1464,8 +1475,25 @@ function closeMemoEditor() {
 }
 
 function saveMemoFromModal(booth, company) {
-  const txt = (document.getElementById('memoText').value || '').trim();
-  addMemo(booth, company, txt);
+  const memoTxt    = (document.getElementById('memoText').value || '').trim();
+  const inquiryTxt = (document.getElementById('inquiryText') ? document.getElementById('inquiryText').value || '' : '').trim();
+
+  // 1) ローカルメモ保存（既存動作）
+  addMemo(booth, company, memoTxt);
+
+  // 2) GASにメモ記録（同意者のみ）
+  if (localStorage.getItem(CONSENT_KEY) === '1') {
+    // 空欄でも「気になる」シグナルとして記録
+    sendMemoToGAS({ booth: booth, company: company, memo: memoTxt });
+  }
+
+  // 3) 問い合わせ記入があれば連絡先入力画面へ
+  if (inquiryTxt) {
+    closeMemoEditor();
+    showInquiryForm(booth, company, inquiryTxt);
+    return;
+  }
+
   closeMemoEditor();
   // 検索結果画面なら再描画してアイコン状態更新
   if (typeof currentSearchResults !== 'undefined' && currentSearchResults && currentSearchLabel) {
@@ -1473,20 +1501,166 @@ function saveMemoFromModal(booth, company) {
   }
 }
 
-// メモ用音声入力
+// メモをGASに送信（fire-and-forget）
+function sendMemoToGAS(p) {
+  const url = GAS_URL + '?action=memo'
+    + '&qr='      + encodeURIComponent(visitorQRCode || '')
+    + '&gyotai='  + encodeURIComponent(visitorGyotai || '')
+    + '&booth='   + encodeURIComponent(p.booth || '')
+    + '&company=' + encodeURIComponent(p.company || '')
+    + '&memo='    + encodeURIComponent(p.memo || '')
+    + '&session=' + encodeURIComponent(SESSION_ID || '');
+  fetch(url).catch(() => {});
+}
+
+// 問い合わせ送信（fire-and-forget）
+function sendInquiryToGAS(p) {
+  const url = GAS_URL + '?action=inquiry'
+    + '&qr='              + encodeURIComponent(visitorQRCode || '')
+    + '&booth='           + encodeURIComponent(p.booth || '')
+    + '&company='         + encodeURIComponent(p.company || '')
+    + '&visitor_company=' + encodeURIComponent(p.visitorCompany || '')
+    + '&visitor_name='    + encodeURIComponent(p.visitorName || '')
+    + '&visitor_dept='    + encodeURIComponent(p.visitorDept || '')
+    + '&visitor_title='   + encodeURIComponent(p.visitorTitle || '')
+    + '&visitor_tel='     + encodeURIComponent(p.visitorTel || '')
+    + '&inquiry='         + encodeURIComponent(p.inquiry || '')
+    + '&gyotai='          + encodeURIComponent(visitorGyotai || '')
+    + '&regtype='         + encodeURIComponent(p.regtype || '')
+    + '&session='         + encodeURIComponent(SESSION_ID || '');
+  return fetch(url).catch(() => {});
+}
+
+// 連絡先入力フォーム
+function showInquiryForm(booth, company, inquiryText) {
+  // 来場者DB照合を試みる
+  const dbUrl = GAS_URL + '?action=visitor&qr=' + encodeURIComponent(visitorQRCode || '');
+
+  // フォームを先に表示（DB照合は非同期で埋める）
+  const modal = document.createElement('div');
+  modal.id = 'inquiryModal';
+  modal.className = 'memo-modal-bg';
+  modal.innerHTML = `
+    <div class="memo-modal">
+      <div class="mm-hd">
+        <i class="ti ti-mail"></i> 出展社への問い合わせ
+        <button class="mm-close" onclick="closeInquiryForm()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="mm-booth-info">
+        <div class="mm-booth">${booth}</div>
+        <div class="mm-company">${escapeHtml(company)}</div>
+      </div>
+      <div style="background:#f9f9f7;border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#444441;line-height:1.6">
+        <div style="font-weight:600;margin-bottom:4px;color:#1a1a18">📨 問い合わせ内容</div>
+        ${escapeHtml(inquiryText)}
+      </div>
+
+      <div style="text-align:center;padding:8px 0;color:#888780;font-size:12px" id="inqDbStatus">来場者情報を確認中...</div>
+
+      <div class="mm-section-label">ご連絡先（出展社・丸菱営業に共有されます）</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="text" id="inqCompany" placeholder="会社名 *必須" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="text" id="inqName"    placeholder="氏名 *必須" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="text" id="inqDept"    placeholder="部署（任意）" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="text" id="inqTitle"   placeholder="役職（任意）" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="tel"  id="inqTel"     placeholder="電話番号 *必須" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+      </div>
+
+      <label style="display:flex;align-items:flex-start;gap:10px;margin-top:14px;cursor:pointer;font-size:12px;color:#444441;line-height:1.5">
+        <input type="checkbox" id="inqConsent" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:#0F6E56">
+        <span>入力した情報を出展社および丸菱営業に提供することに同意します（招待状記載の第三者提供条件に準じます）</span>
+      </label>
+
+      <div class="mm-actions">
+        <button class="mm-btn mm-btn-cancel" onclick="closeInquiryForm()">キャンセル</button>
+        <button class="mm-btn mm-btn-save" id="inqSendBtn" onclick="submitInquiry('${booth}','${escapeJsAttr(company)}','${escapeJsAttr(inquiryText)}')">送信</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // 非同期で来場者DB照合 → 事前登録者なら自動入力
+  fetch(dbUrl).then(r => r.json()).then(data => {
+    const st = document.getElementById('inqDbStatus');
+    if (data && data.found) {
+      if (data.company) document.getElementById('inqCompany').value = data.company;
+      if (data.name)    document.getElementById('inqName').value    = data.name;
+      if (data.dept)    document.getElementById('inqDept').value    = data.dept;
+      if (data.title)   document.getElementById('inqTitle').value   = data.title;
+      if (data.tel)     document.getElementById('inqTel').value     = data.tel;
+      if (st) { st.innerHTML = '✅ 事前登録情報を自動入力しました（必要に応じて編集できます）'; st.style.color = '#0F6E56'; }
+      document.getElementById('inqSendBtn').dataset.regtype = '事前';
+    } else {
+      if (st) { st.innerHTML = '会場登録の方はご連絡先をご入力ください'; st.style.color = '#888780'; }
+      document.getElementById('inqSendBtn').dataset.regtype = '会場';
+    }
+  }).catch(() => {
+    const st = document.getElementById('inqDbStatus');
+    if (st) { st.innerHTML = 'ご連絡先をご入力ください'; st.style.color = '#888780'; }
+    document.getElementById('inqSendBtn').dataset.regtype = '不明';
+  });
+}
+
+function closeInquiryForm() {
+  const m = document.getElementById('inquiryModal');
+  if (m) m.remove();
+}
+
+function submitInquiry(booth, company, inquiryText) {
+  const c   = (document.getElementById('inqCompany').value || '').trim();
+  const n   = (document.getElementById('inqName').value    || '').trim();
+  const d   = (document.getElementById('inqDept').value    || '').trim();
+  const t   = (document.getElementById('inqTitle').value   || '').trim();
+  const tel = (document.getElementById('inqTel').value     || '').trim();
+  const consent = document.getElementById('inqConsent').checked;
+  const regtype = document.getElementById('inqSendBtn').dataset.regtype || '不明';
+
+  if (!c)   { alert('会社名を入力してください'); return; }
+  if (!n)   { alert('氏名を入力してください'); return; }
+  if (!tel) { alert('電話番号を入力してください'); return; }
+  if (!consent) { alert('情報提供への同意にチェックしてください'); return; }
+
+  const btn = document.getElementById('inqSendBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  sendInquiryToGAS({
+    booth: booth,
+    company: company,
+    visitorCompany: c,
+    visitorName: n,
+    visitorDept: d,
+    visitorTitle: t,
+    visitorTel: tel,
+    inquiry: inquiryText,
+    regtype: regtype
+  }).then(() => {
+    alert('問い合わせを送信しました。ありがとうございました。');
+    closeInquiryForm();
+    if (typeof currentSearchResults !== 'undefined' && currentSearchResults && currentSearchLabel) {
+      showResults(currentSearchResults, currentSearchLabel);
+    }
+  });
+}
+
+// メモ・問い合わせ用音声入力
 let memoRecognition = null;
 let memoListening = false;
-function toggleMemoMic() {
+let memoMicCurrentBtn = null;
+function toggleMemoMic(targetId) {
+  targetId = targetId || 'memoText';
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('このブラウザは音声入力に対応していません');
     return;
   }
-  const btn = document.getElementById('memoMicBtn');
+  const btnId = targetId === 'inquiryText' ? 'inquiryMicBtn' : 'memoMicBtn';
+  const btn = document.getElementById(btnId);
   if (memoListening) {
     if (memoRecognition) memoRecognition.stop();
     memoListening = false;
-    btn.classList.remove('mic-on');
-    btn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+    if (memoMicCurrentBtn) {
+      memoMicCurrentBtn.classList.remove('mic-on');
+      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+    }
     return;
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1496,18 +1670,19 @@ function toggleMemoMic() {
   memoRecognition.interimResults = false;
   memoRecognition.onresult = (e) => {
     const txt = e.results[0][0].transcript;
-    const ta = document.getElementById('memoText');
+    const ta = document.getElementById(targetId);
     if (ta) ta.value = ta.value ? ta.value + ' ' + txt : txt;
   };
   memoRecognition.onend = () => {
     memoListening = false;
-    if (btn) {
-      btn.classList.remove('mic-on');
-      btn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+    if (memoMicCurrentBtn) {
+      memoMicCurrentBtn.classList.remove('mic-on');
+      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
     }
   };
   memoRecognition.start();
   memoListening = true;
+  memoMicCurrentBtn = btn;
   btn.classList.add('mic-on');
   btn.innerHTML = '<i class="ti ti-microphone"></i> 録音中…タップで停止';
 }
