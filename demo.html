@@ -277,9 +277,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .report-sec-ttl{font-size:13px;font-weight:700;color:#1a1a18;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .report-kw-list{display:flex;flex-wrap:wrap;gap:6px}
 .report-kw{background:#E1F5EE;color:#0F6E56;font-size:12px;padding:4px 10px;border-radius:14px}
-.satisfaction-row{display:flex;justify-content:center;gap:12px;margin:10px 0}
-.sat-btn{width:56px;height:56px;border-radius:50%;border:2px solid #e8e7e1;background:#fff;font-size:26px;cursor:pointer;transition:all .15s}
-.sat-btn.on{border-color:#0F6E56;background:#E1F5EE;transform:scale(1.15)}
+.satisfaction-row{display:flex;justify-content:space-between;gap:6px;margin:6px 0}
+.sat-btn{flex:1;height:44px;border-radius:10px;border:2px solid #e8e7e1;background:#fff;font-size:22px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;padding:0;display:flex;align-items:center;justify-content:center}
+.sat-btn:active{opacity:.85}
+.sat-btn.on{border-color:#0F6E56;background:#E1F5EE;transform:scale(1.08)}
+.sat-row-inline{padding:4px 0}
+.sat-lbl-inline{font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:4px}
 .report-submit{width:100%;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
 .report-submit:active{opacity:.85}
 
@@ -880,8 +883,8 @@ function showHome() {
       </div>
     </div>
     <div style="padding:0 16px 8px">
-      <button onclick="showExitReport()" style="width:100%;padding:12px;background:#1a1a18;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-        <i class="ti ti-chart-bar"></i> 退場レポート（本日の足跡）
+      <button onclick="showExitReport()" style="width:100%;padding:12px;background:#fff;color:#0F6E56;border:1.5px solid #0F6E56;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="ti ti-clipboard-check"></i> 本日の足跡・アンケート
       </button>
     </div>
     <div style="padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between">
@@ -2566,12 +2569,47 @@ function showExitReport() {
   <div class="screen">
     <div class="res-hdr">
       <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
-      <div class="res-q">本日の足跡</div>
+      <div class="res-q">本日の足跡・アンケート</div>
     </div>
     <div class="report-wrap">
       <div class="report-hero">
         <div class="report-hero-ttl">🎉 総合展2026 お疲れさまでした！</div>
         <div class="report-hero-sub">2026年6月 マリンメッセ福岡A館 ${bizHtml}</div>
+      </div>
+
+      <div class="report-sec" style="background:#f9fffe;border:1.5px solid #0F6E56">
+        <div class="report-sec-ttl" style="margin-bottom:14px"><i class="ti ti-mood-smile" style="color:#0F6E56"></i>かんたんアンケート（1タップでOK）</div>
+
+        <div class="sat-row-inline">
+          <div class="sat-lbl-inline">🎪 総合展の満足度</div>
+          <div class="satisfaction-row">
+            <button class="sat-btn" data-cat="event" data-val="5" onclick="setSatV2(this,'event',5)">🤩</button>
+            <button class="sat-btn" data-cat="event" data-val="4" onclick="setSatV2(this,'event',4)">😄</button>
+            <button class="sat-btn" data-cat="event" data-val="3" onclick="setSatV2(this,'event',3)">😊</button>
+            <button class="sat-btn" data-cat="event" data-val="2" onclick="setSatV2(this,'event',2)">😐</button>
+            <button class="sat-btn" data-cat="event" data-val="1" onclick="setSatV2(this,'event',1)">😢</button>
+          </div>
+        </div>
+
+        <div class="sat-row-inline" style="margin-top:12px">
+          <div class="sat-lbl-inline">📱 このアプリの満足度</div>
+          <div class="satisfaction-row">
+            <button class="sat-btn" data-cat="app" data-val="5" onclick="setSatV2(this,'app',5)">🤩</button>
+            <button class="sat-btn" data-cat="app" data-val="4" onclick="setSatV2(this,'app',4)">😄</button>
+            <button class="sat-btn" data-cat="app" data-val="3" onclick="setSatV2(this,'app',3)">😊</button>
+            <button class="sat-btn" data-cat="app" data-val="2" onclick="setSatV2(this,'app',2)">😐</button>
+            <button class="sat-btn" data-cat="app" data-val="1" onclick="setSatV2(this,'app',1)">😢</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <div class="sat-lbl-inline" style="margin-bottom:6px">💬 一言感想・ご要望（任意）</div>
+          <textarea id="surveyComment" class="mm-textarea" rows="2" placeholder="自由にご記入ください（任意）"></textarea>
+        </div>
+
+        <button class="report-submit" onclick="submitExitReport()" style="margin-top:14px">
+          <i class="ti ti-send"></i> 送信して終了
+        </button>
       </div>
 
       <div class="report-stats">
@@ -2596,41 +2634,42 @@ function showExitReport() {
         <div style="font-size:13px;color:#73726c">マイメモタブで確認・メール送信できます</div>
         <button onclick="showMyMemo()" style="margin-top:8px;background:#534AB7;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">マイメモを見る</button>
       </div>` : ''}
-
-      <div class="report-sec">
-        <div class="report-sec-ttl"><i class="ti ti-mood-smile" style="color:#993556"></i>本日の満足度</div>
-        <div class="satisfaction-row" id="satRow">
-          <button class="sat-btn" onclick="setSat(5,this)">🤩</button>
-          <button class="sat-btn" onclick="setSat(4,this)">😄</button>
-          <button class="sat-btn" onclick="setSat(3,this)">😊</button>
-          <button class="sat-btn" onclick="setSat(2,this)">😐</button>
-          <button class="sat-btn" onclick="setSat(1,this)">😢</button>
-        </div>
-        <button class="report-submit" onclick="submitExitReport()">
-          <i class="ti ti-send"></i> 送信して終了
-        </button>
-      </div>
     </div>
   </div>`;
 
-  window._reportSat = 0;
+  window._reportSatEvent = 0;
+  window._reportSatApp   = 0;
 }
 
+function setSatV2(btn, cat, v) {
+  if (cat === 'event') window._reportSatEvent = v;
+  else if (cat === 'app') window._reportSatApp = v;
+  // 同じカテゴリの他ボタンの選択解除
+  document.querySelectorAll('.sat-btn[data-cat="' + cat + '"]').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// 旧関数も互換のため残す
 function setSat(v, btn) {
-  window._reportSat = v;
+  window._reportSatEvent = v;
   document.querySelectorAll('.sat-btn').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
 }
 
 function submitExitReport() {
-  const rating = window._reportSat || 0;
+  const ratingEvent = window._reportSatEvent || 0;
+  const ratingApp   = window._reportSatApp   || 0;
+  const commentEl   = document.getElementById('surveyComment');
+  const comment     = commentEl ? (commentEl.value || '').trim() : '';
   const kws    = actionLog.searchKeywords.map(k => k.q).join(',');
   const booths = actionLog.viewedBooths.map(b => b.booth).join(',');
   const elapsed = Math.floor((Date.now() - appStartTime) / 60000);
 
   // GASに記録
   const url = GAS_URL + '?action=survey'
-    + '&rating='      + rating
+    + '&rating='      + ratingEvent
+    + '&appRating='   + ratingApp
+    + '&comment='     + encodeURIComponent(comment)
     + '&booths='      + encodeURIComponent(booths)
     + '&searchCount=' + actionLog.searchKeywords.length
     + '&session='     + SESSION_ID
