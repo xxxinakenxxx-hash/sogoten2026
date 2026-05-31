@@ -266,9 +266,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 
 /* === 退場レポート === */
 .report-wrap{padding:16px}
-.report-hero{background:linear-gradient(135deg,#1a1a18 0%,#2a2a28 100%);border-radius:16px;padding:20px;color:#fff;margin-bottom:16px;text-align:center}
+.report-hero{background:linear-gradient(135deg,#0F6E56 0%,#0a8568 100%);border-radius:16px;padding:18px 20px;color:#fff;margin-bottom:16px;text-align:center}
 .report-hero-ttl{font-size:18px;font-weight:700;margin-bottom:4px}
 .report-hero-sub{font-size:12px;opacity:.7}
+.report-subhead{display:flex;align-items:center;gap:10px;margin:18px 4px 10px}
+.report-subhead-ttl{font-size:15px;font-weight:700;color:#1a1a18}
+.report-subhead-sub{font-size:11px;color:#888780;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .report-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
 .rstat{background:#f5f5f3;border-radius:12px;padding:14px;text-align:center}
 .rstat-num{font-size:28px;font-weight:700;color:#0F6E56}
@@ -1091,6 +1094,8 @@ function processQRCode(code) {
   const consent = localStorage.getItem(CONSENT_KEY);
   if (consent === '1') {
     sendLog({ keyword: '[QR入場]', lang: lang, booth: normalized, found: gyotai ? 'あり' : 'なし', searchCount: 0 });
+    // 入退場ログにも記録
+    recordEntryExit('入場');
   }
 
   // 業態確認画面を表示してからホームへ
@@ -1527,6 +1532,16 @@ function saveMemoFromModal(booth, company) {
 }
 
 // メモをGASに送信（fire-and-forget）
+// 入退場ログ送信（fire-and-forget）
+function recordEntryExit(action) {
+  const url = GAS_URL + '?action=entryexit'
+    + '&qr='     + encodeURIComponent(visitorQRCode || '')
+    + '&gyotai=' + encodeURIComponent(visitorGyotai || '')
+    + '&entry='  + encodeURIComponent(action)
+    + '&session='+ encodeURIComponent(SESSION_ID || '');
+  fetch(url).catch(() => {});
+}
+
 function sendMemoToGAS(p) {
   const url = GAS_URL + '?action=memo'
     + '&qr='      + encodeURIComponent(visitorQRCode || '')
@@ -2574,7 +2589,6 @@ function showExitReport() {
     <div class="report-wrap">
       <div class="report-hero">
         <div class="report-hero-ttl">🎉 総合展2026 お疲れさまでした！</div>
-        <div class="report-hero-sub">2026年6月 マリンメッセ福岡A館 ${bizHtml}</div>
       </div>
 
       <div class="report-sec" style="background:#f9fffe;border:1.5px solid #0F6E56">
@@ -2610,6 +2624,14 @@ function showExitReport() {
         <button class="report-submit" onclick="submitExitReport()" style="margin-top:14px">
           <i class="ti ti-send"></i> 送信して終了
         </button>
+      </div>
+
+      <div class="report-subhead">
+        <i class="ti ti-footprints" style="color:#0F6E56;font-size:20px"></i>
+        <div>
+          <div class="report-subhead-ttl">今日のあしあと</div>
+          <div class="report-subhead-sub">2026年6月 マリンメッセ福岡A館 ${bizHtml}</div>
+        </div>
       </div>
 
       <div class="report-stats">
@@ -2677,6 +2699,9 @@ function submitExitReport() {
     + '&elapsed='     + elapsed
     + '&keywords='    + encodeURIComponent(kws.slice(0,200));
   fetch(url).catch(() => {});
+
+  // 退場記録
+  recordEntryExit('退場');
 
   // セッションデータをクリア
   try { sessionStorage.removeItem('sogoten2026_actions'); } catch(e) {}
