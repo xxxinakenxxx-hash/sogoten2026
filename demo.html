@@ -164,6 +164,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .mm-btn-save:active{opacity:.85}
 .mm-btn-save:disabled{background:#d3d1c7;cursor:not-allowed}
 .mm-section-label{font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:8px;margin-top:4px}
+.mm-textarea-wrap{position:relative}
+.mm-textarea-wrap .mm-textarea{padding-right:42px}
+.mm-mic-icon{position:absolute;right:8px;bottom:8px;width:32px;height:32px;border-radius:50%;border:none;background:#f5f5f3;color:#73726c;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s;-webkit-tap-highlight-color:transparent}
+.mm-mic-icon:active{opacity:.85}
+.mm-mic-icon.mic-on{background:#E24B4A;color:#fff;animation:micPulse 1s ease-in-out infinite}
+.my-other-inq-btn{margin-left:auto;background:#fff;border:1.5px solid #C8842F;color:#C8842F;padding:7px 12px;border-radius:18px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.my-other-inq-btn:active{background:#fdf6ec}
+.my-other-inq-btn i{font-size:14px}
+@media (max-width:380px){.my-other-inq-label{display:none}}
+.my-search-add-btn{width:100%;background:#f5f5f3;border:1.5px dashed #b8b5a8;color:#534AB7;padding:12px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px;-webkit-tap-highlight-color:transparent}
+.my-search-add-btn:active{background:#e8e7e1}
+.my-search-add-btn i{font-size:16px}
+.oinq-radio{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e8e7e1;border-radius:8px;font-size:13px;color:#1a1a18;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.oinq-radio input{accent-color:#C8842F;width:16px;height:16px;margin:0}
+.oinq-radio:has(input:checked){background:#fdf6ec;border-color:#C8842F}
 
 /* === 検索結果カードのメモボタン === */
 .rc-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -1418,9 +1433,17 @@ function showMyMemo() {
 
   document.getElementById('screen').innerHTML = `
   <div class="screen">
-    <div class="sub-hd">
+    <div class="sub-hd" style="position:relative">
       <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
       <div class="sub-hd-ttl">マイメモ <span class="sub-hd-cnt">${myMemos.length}件</span></div>
+      <button class="my-other-inq-btn" onclick="openOtherInquiry()" title="出展社以外への問い合わせ">
+        <i class="ti ti-message-circle"></i><span class="my-other-inq-label">出展社以外への問い合わせ</span>
+      </button>
+    </div>
+    <div style="padding:0 16px">
+      <button class="my-search-add-btn" onclick="showHome()">
+        <i class="ti ti-search"></i> ブース番号・社名で検索して追加
+      </button>
     </div>
     ${body}
   </div>`;
@@ -1445,18 +1468,17 @@ function openMemoEditor(booth, company) {
         <div class="mm-booth">${booth}</div>
         <div class="mm-company">${escapeHtml(company)}</div>
       </div>
-      <div class="mm-section-label">📝 自分用メモ</div>
-      <textarea id="memoText" class="mm-textarea" placeholder="例：個包装の少量パック詳細聞く、価格表もらった、来週見積もり依頼" rows="3">${escapeHtml(currentMemo)}</textarea>
-      <div class="mm-mic-row">
-        <button class="mm-mic-btn" id="memoMicBtn" onclick="toggleMemoMic('memoText')"><i class="ti ti-microphone"></i> 音声入力</button>
-        <div class="mm-note">空欄でも「気になる」として保存されます</div>
+      <div class="mm-section-label">📝 メモ・気になったこと（あとで見返すことができます）</div>
+      <div class="mm-textarea-wrap">
+        <textarea id="memoText" class="mm-textarea" placeholder="例：個包装の少量パック詳細聞く、価格表もらった、来週見積もり依頼" rows="3">${escapeHtml(currentMemo)}</textarea>
+        <button class="mm-mic-icon" id="memoMicBtn" onclick="toggleMemoMic('memoText')" title="音声入力"><i class="ti ti-microphone"></i></button>
       </div>
+      <div class="mm-note">空欄でも「気になる」として保存されます</div>
 
-      <div class="mm-section-label" style="margin-top:14px">📨 出展社への問い合わせ（任意）</div>
-      <textarea id="inquiryText" class="mm-textarea" placeholder="例：詳しい資料が欲しい / 見積もりをお願いしたい / 商談を希望" rows="3"></textarea>
-      <div class="mm-mic-row">
-        <button class="mm-mic-btn" id="inquiryMicBtn" onclick="toggleMemoMic('inquiryText')"><i class="ti ti-microphone"></i> 音声入力</button>
-        <div class="mm-note">入力すると次画面で連絡先入力に進みます</div>
+      <div class="mm-section-label" style="margin-top:14px">📨 出展社に連絡したい場合はこちら</div>
+      <div class="mm-textarea-wrap">
+        <textarea id="inquiryText" class="mm-textarea" placeholder="例：詳しい資料が欲しい / 見積もりをお願いしたい / 商談を希望" rows="3"></textarea>
+        <button class="mm-mic-icon" id="inquiryMicBtn" onclick="toggleMemoMic('inquiryText')" title="音声入力"><i class="ti ti-microphone"></i></button>
       </div>
 
       <div class="mm-actions">
@@ -1642,6 +1664,87 @@ function submitInquiry(booth, company, inquiryText) {
   });
 }
 
+// 出展社以外への問い合わせモーダル
+function openOtherInquiry() {
+  const modal = document.createElement('div');
+  modal.id = 'otherInqModal';
+  modal.className = 'memo-modal-bg';
+  modal.innerHTML = `
+    <div class="memo-modal">
+      <div class="mm-hd">
+        <i class="ti ti-message-circle"></i> 出展社以外への問い合わせ
+        <button class="mm-close" onclick="closeOtherInquiry()"><i class="ti ti-x"></i></button>
+      </div>
+
+      <div style="background:#fdf6ec;border-left:3px solid #C8842F;border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#444441;line-height:1.6">
+        こちらは<strong>出展社以外</strong>へのお問い合わせ窓口です。<br>
+        出展社や出展商品へのお問い合わせは「マイメモ」からお願いします。<br>
+        マイメモではブース番号でも検索できます。
+      </div>
+
+      <div class="mm-section-label">お問い合わせの種類</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        <label class="oinq-radio"><input type="radio" name="oinqCat" value="主催者への要望・感想" checked> 主催者への要望・感想</label>
+        <label class="oinq-radio"><input type="radio" name="oinqCat" value="探していた商品・出展社が見つからなかった"> 探していた商品・出展社が見つからなかった</label>
+        <label class="oinq-radio"><input type="radio" name="oinqCat" value="アプリの不具合・改善要望"> アプリの不具合・改善要望</label>
+      </div>
+
+      <div class="mm-section-label">📝 内容</div>
+      <div class="mm-textarea-wrap">
+        <textarea id="oinqText" class="mm-textarea" placeholder="ご要望・ご質問の内容をご記入ください" rows="4"></textarea>
+        <button class="mm-mic-icon" id="oinqMicBtn" onclick="toggleMemoMic('oinqText')" title="音声入力"><i class="ti ti-microphone"></i></button>
+      </div>
+
+      <div class="mm-section-label" style="margin-top:14px">ご連絡先（返信が必要な場合のみ・任意）</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="text" id="oinqCompany" placeholder="会社名（任意）" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="text" id="oinqName"    placeholder="氏名（任意）" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+        <input type="tel"  id="oinqTel"     placeholder="電話番号（任意）" style="padding:10px;border:1px solid #d3d1c7;border-radius:8px;font-size:14px">
+      </div>
+
+      <div class="mm-actions">
+        <button class="mm-btn mm-btn-cancel" onclick="closeOtherInquiry()">キャンセル</button>
+        <button class="mm-btn mm-btn-save" id="oinqSendBtn" onclick="submitOtherInquiry()">送信</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function closeOtherInquiry() {
+  const m = document.getElementById('otherInqModal');
+  if (m) m.remove();
+}
+
+function submitOtherInquiry() {
+  const cat  = (document.querySelector('input[name="oinqCat"]:checked') || {}).value || '';
+  const txt  = (document.getElementById('oinqText').value    || '').trim();
+  const c    = (document.getElementById('oinqCompany').value || '').trim();
+  const n    = (document.getElementById('oinqName').value    || '').trim();
+  const tel  = (document.getElementById('oinqTel').value     || '').trim();
+
+  if (!txt) { alert('内容を入力してください'); return; }
+
+  const btn = document.getElementById('oinqSendBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  // 問い合わせシートに記録（ブース欄は空欄、カテゴリを内容の先頭につける）
+  sendInquiryToGAS({
+    booth: '',
+    company: '【' + cat + '】',
+    visitorCompany: c,
+    visitorName: n,
+    visitorDept: '',
+    visitorTitle: '',
+    visitorTel: tel,
+    inquiry: txt,
+    regtype: 'その他'
+  }).then(() => {
+    alert('お問い合わせを送信しました。ありがとうございました。');
+    closeOtherInquiry();
+  });
+}
+
 // メモ・問い合わせ用音声入力
 let memoRecognition = null;
 let memoListening = false;
@@ -1659,7 +1762,7 @@ function toggleMemoMic(targetId) {
     memoListening = false;
     if (memoMicCurrentBtn) {
       memoMicCurrentBtn.classList.remove('mic-on');
-      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i>';
     }
     return;
   }
@@ -1677,14 +1780,14 @@ function toggleMemoMic(targetId) {
     memoListening = false;
     if (memoMicCurrentBtn) {
       memoMicCurrentBtn.classList.remove('mic-on');
-      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i> 音声入力';
+      memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i>';
     }
   };
   memoRecognition.start();
   memoListening = true;
   memoMicCurrentBtn = btn;
   btn.classList.add('mic-on');
-  btn.innerHTML = '<i class="ti ti-microphone"></i> 録音中…タップで停止';
+  // 録音中のスタイルはCSSのmic-onクラスで表現
 }
 
 // メモをメール送信（mailto:）
