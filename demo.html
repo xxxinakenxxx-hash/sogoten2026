@@ -1276,7 +1276,7 @@ function showBoothSearch() {
     const idx = MAIN_CATS.indexOf(c);
     const fn  = c.isMachine  ? `showMachineMenu()`
               : c.excludeBusiness ? `searchCat(${idx})`
-              : `search('${c.q}','${escapeJsAttr(catL(c.label))}')`;
+              : `search('${c.q}','${escapeJsAttr(catL(c.label))}',null,null,true)`;
     return `<div class="cc${cls}" onclick="${fn}">
       <div class="cc-icon" style="background:${c.bg};color:${c.ic}"><i class="ti ${c.icon}"></i></div>
       <div><div class="cc-label">${catL(c.label)}</div><div class="cc-sub">${catS(c.label, c.sub)}</div></div>
@@ -2309,7 +2309,7 @@ function escapeJsAttr(s) {
 function showMachineMenu() {
   _currentView = showMachineMenu;
   const subs = MACHINE_SUBS.map(s => `
-    <div class="sc" onclick="search('${s.q}','${escapeJsAttr(catL(s.label))}')">
+    <div class="sc" onclick="search('${s.q}','${escapeJsAttr(catL(s.label))}',null,null,true)">
       <div class="sc-icon" style="background:${s.bg};color:${s.ic}"><i class="ti ${s.icon}"></i></div>
       <div class="sc-label">${catL(s.label)}</div>
       <div class="sc-cnt">${catS(s.label, s.sub)}</div>
@@ -2840,10 +2840,10 @@ const CAT_FIXED_BOOTHS = {
 
 function searchCat(idx) {
   const c = MAIN_CATS[idx];
-  search(c.q, c.label, c.excludeBusiness, CAT_FIXED_BOOTHS[c.label] || []);
+  search(c.q, c.label, c.excludeBusiness, CAT_FIXED_BOOTHS[c.label] || [], true);
 }
 
-function search(q, label, excludeBusiness, fixedBooths) {
+function search(q, label, excludeBusiness, fixedBooths, tokenized) {
   showLoading();
   searchCount++;
 
@@ -2853,14 +2853,24 @@ function search(q, label, excludeBusiness, fixedBooths) {
   const resultMap = new Map();
 
   // ── 方式1: 2段階タグ検索（日本語自然文・音声入力対応）──
+  // tokenized=true（カテゴリ検索）は、語を空白で分割した「確定キーワード」だけを使い、
+  // 「タグが指定語を含む」一方向一致にする。これにより "冷凍和菓子" の中の "和菓子" のような
+  // 部分語が他カテゴリの商品を引き込む誤検出を防ぐ。
   const matchedKws = new Set();
-  P.forEach(item => {
-    (item.tags || []).forEach(tag => {
-      const t = tag.trim().toLowerCase();
-      if (t.length >= 2 && qNorm.indexOf(t) >= 0) matchedKws.add(t);
+  if (tokenized) {
+    q.toLowerCase().split(/[\u3000\s]+/).forEach(tok => {
+      const t = tok.trim();
+      if (t.length >= 2) matchedKws.add(t);
     });
-  });
-  if (qNorm.length >= 2) matchedKws.add(qNorm);
+  } else {
+    P.forEach(item => {
+      (item.tags || []).forEach(tag => {
+        const t = tag.trim().toLowerCase();
+        if (t.length >= 2 && qNorm.indexOf(t) >= 0) matchedKws.add(t);
+      });
+    });
+    if (qNorm.length >= 2) matchedKws.add(qNorm);
+  }
 
   P.forEach(item => {
     // 業種除外フィルタ（例：冷凍カテゴリで機械・包材を除外）
@@ -2872,21 +2882,26 @@ function search(q, label, excludeBusiness, fixedBooths) {
       const t = tag.trim().toLowerCase();
       if (!t || t.length < 2) return;
       for (const kw of matchedKws) {
-        if (t.indexOf(kw) >= 0 || kw.indexOf(t) >= 0) {
+        const hit = tokenized ? (t.indexOf(kw) >= 0) : (t.indexOf(kw) >= 0 || kw.indexOf(t) >= 0);
+        if (hit) {
           score += kw.length;
           if (matched.indexOf(tag) < 0) matched.push(tag);
           break;
         }
       }
     });
-    const co = item.company.replace(/[株式会社㈱㈲有限会社]/g, '').toLowerCase();
-    if (co.length >= 2 && (qNorm.indexOf(co) >= 0 || co.indexOf(qNorm) >= 0)) {
-      score += 20; matched.push(item.company);
+    // 社名一致はフリーテキスト検索のみ（カテゴリ検索では語ブロブとの偶発一致を避ける）
+    if (!tokenized) {
+      const co = item.company.replace(/[株式会社㈱㈲有限会社]/g, '').toLowerCase();
+      if (co.length >= 2 && (qNorm.indexOf(co) >= 0 || co.indexOf(qNorm) >= 0)) {
+        score += 20; matched.push(item.company);
+      }
     }
     if (score > 0) resultMap.set(item.booth + '|' + item.company, { item, score, matched });
   });
 
   // ── 方式2: Fuse.js ファジー検索（誤字・略語・英語対応）──
+  // カテゴリ検索では Fuse は既存ヒットの加点のみ行い、新規追加はしない（あいまい一致の漏れ防止）。
   if (fuse) {
     fuse.search(q, { limit: 20 }).forEach(r => {
       // 業種除外フィルタ
@@ -2896,7 +2911,7 @@ function search(q, label, excludeBusiness, fixedBooths) {
       const fs  = Math.round((1 - (r.score || 0)) * 8);
       if (resultMap.has(key)) {
         resultMap.get(key).score += fs;
-      } else if (fs >= 2) {
+      } else if (fs >= 2 && !tokenized) {
         resultMap.set(key, { item: r.item, score: fs, matched: [] });
       }
     });
