@@ -288,6 +288,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .sat-lbl-inline{font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:4px}
 .report-submit{width:100%;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
 .report-submit:active{opacity:.85}
+/* 受付モード：PC幅制限解除 */
+body.reception-mode .app { max-width: 100%; }
+body.reception-mode #map-svg-wrap { min-height: 70vh; }
 
 </style>
 </head>
@@ -312,6 +315,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
 // ?ai=1 のときだけOpenAI呼び出し。未指定はデモモード（APIキー不要）
 let AI_ENABLED = new URLSearchParams(location.search).get('ai') === '1';
+let RECEPTION_MODE = false;
 function toggleAI() {
   AI_ENABLED = !AI_ENABLED;
   localStorage.setItem('sogoten2026_ai', AI_ENABLED ? '1' : '0');
@@ -791,6 +795,17 @@ window.addEventListener('load', async () => {
     return;
   }
 
+  // ?mode=reception で受付モード
+  RECEPTION_MODE = params.get('mode') === 'reception';
+  if (RECEPTION_MODE) {
+    document.body.classList.add('reception-mode');
+    visitorQRCode = 'reception';
+    visitorGyotai = '';
+    saveVisitor();
+    showReceptionHome();
+    return;
+  }
+
   const hasConsent = localStorage.getItem(CONSENT_KEY) === '1';
   if (!hasConsent) {
     showConsentScreen();
@@ -1209,6 +1224,35 @@ function showInit() {
   <div class="screen init-screen">
     <div class="init-logo"><i class="ti ti-search"></i></div>
     <div class="init-txt">${tr('loading')}</div>
+  </div>`;
+}
+
+function showReceptionHome() {
+  _currentView = showReceptionHome;
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="home-hero">
+      <h2 style="font-size:26px">ご案内</h2>
+      <p style="font-size:15px">商品・出展社をお探しの方はこちら</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px">
+      <div class="mm-card" onclick="showBoothSearch()" style="min-height:180px">
+        <div class="mm-icon" style="background:#FAEEDA;color:#854F0B;width:72px;height:72px;font-size:36px"><i class="ti ti-search"></i></div>
+        <div class="mm-label" style="font-size:18px">ブースを探す</div>
+        <div class="mm-sub" style="font-size:13px">商品名・カテゴリから検索</div>
+      </div>
+      <div class="mm-card" onclick="enterAIConcierge()" style="min-height:180px">
+        <div class="mm-icon" style="background:#E6F1FB;color:#185FA5;width:72px;height:72px;font-size:36px"><i class="ti ti-robot"></i></div>
+        <div class="mm-label" style="font-size:18px">AIに聞く</div>
+        <div class="mm-sub" style="font-size:13px">「〇〇はどこですか？」</div>
+      </div>
+    </div>
+    <div style="padding:0 16px">
+      <button onclick="showMapScreen()"
+        style="width:100%;padding:16px;background:#fff;border:1.5px solid #0F6E56;color:#0F6E56;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <i class="ti ti-map" style="font-size:20px"></i> 会場MAPを見る
+      </button>
+    </div>
   </div>`;
 }
 
@@ -2810,6 +2854,10 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
 
   return '<svg viewBox="0 0 561 734" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;background:#fafaf8">'
     + venueLayer
+    + '<g>'
+    + '<line x1="0" y1="366" x2="561" y2="366" stroke="#E8A0A0" stroke-width="18" stroke-linecap="round" opacity="0.45"/>'
+    + '<line x1="282" y1="0" x2="282" y2="734" stroke="#E8A0A0" stroke-width="18" stroke-linecap="round" opacity="0.45"/>'
+    + '</g>'
     + '<g>' + facLayer + '</g>'
     + '<g>' + facHighlightLayer + '</g>'
     + '<g>' + routeLayer + '</g>'
