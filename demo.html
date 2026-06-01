@@ -2603,7 +2603,7 @@ function showMapScreen(focusBooth) {
         <button onclick="mapResetVB()" style="width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2);font-size:14px;font-weight:700;color:#0F6E56;cursor:pointer">⛶</button>
       </div>
     </div>
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom)) 16px;background:#fff;border-top:1px solid #e8e7e1;z-index:30;box-shadow:0 -2px 8px rgba(0,0,0,.06)">
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom)) 16px;background:#fff;border-top:1px solid #e8e7e1;z-index:30;box-shadow:0 -2px 8px rgba(0,0,0,.06);${RECEPTION_MODE ? 'display:none' : ''}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <i class="ti ti-navigation" style="color:#0F6E56;font-size:16px;flex-shrink:0"></i>
         <span style="font-size:13px;font-weight:600;color:#1a1a18">${tr('mapRouteTitle')}</span>
@@ -2627,6 +2627,10 @@ function showMapScreen(focusBooth) {
     applyViewBox();
   }
   attachMapInteractions();
+  // 受付モードはMAP表示時に自動で総合案内起点の経路を表示
+  if(RECEPTION_MODE && focusBooth) {
+    showRoute();
+  }
 }
 
 function applyViewBox() {
@@ -2734,9 +2738,24 @@ function attachMapInteractions() {
 
 // 経路表示
 function showRoute() {
+  let fromBooth;
+  if (RECEPTION_MODE) {
+    // 受付モードは総合案内固定
+    const highlightIds = _currentFocus ? [_currentFocus] : _lastBoothIds;
+    let focusPos = _currentFocus ? BOOTH_COORDS[_currentFocus] : null;
+    if (!_currentFocus && _facilityFocus && FACILITY_COORDS[_facilityFocus]) {
+      focusPos = FACILITY_COORDS[_facilityFocus];
+    }
+    const wrap = document.getElementById('map-svg-wrap');
+    if(wrap) {
+      wrap.innerHTML = buildMapSVG(highlightIds, focusPos, null, _facilityFocus, FACILITY_COORDS['総合案内']);
+      applyViewBox();
+    }
+    return;
+  }
   const fromInput = document.getElementById('curLocInput');
   if(!fromInput) return;
-  const fromBooth = fromInput.value.trim().toUpperCase();
+  fromBooth = fromInput.value.trim().toUpperCase();
   if(!fromBooth || !BOOTH_COORDS[fromBooth]) {
     fromInput.style.borderColor = '#E24B4A';
     setTimeout(() => fromInput.style.borderColor = '#d3d1c7', 1500);
@@ -2766,7 +2785,7 @@ const MAP_COLORS = {"A": "#854F0B", "B": "#185FA5", "C": "#0F6E56", "D": "#99355
 const MAP_BG = {"A": "#FAEEDA", "B": "#E6F1FB", "C": "#E1F5EE", "D": "#FBEAF0"};
 const SVG_INNER = ''; // loaded via fetch
 
-function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
+function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility, fromCoords) {
   // ── 会場レイアウト（venue_map.svgの中身を背景に） ──
   // 読み込み済みならそれを使う、未読込なら最低限の外枠だけ
   const venueLayer = VENUE_SVG_INNER
@@ -2820,8 +2839,11 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
 
   // ── 経路（通路グラフをダイクストラで探索）──
   let routeLayer = '';
-  if(fromBooth && BOOTH_COORDS[fromBooth]) {
-    const fp = BOOTH_COORDS[fromBooth];
+  // fromCoordsが渡された場合はそれを起点にする（受付モード：総合案内固定）
+  const fp_override = fromCoords || null;
+
+  if(fp_override || (fromBooth && BOOTH_COORDS[fromBooth])) {
+    const fp = fp_override || BOOTH_COORDS[fromBooth];
 
     // 施設への経路（施設フォーカス時）
     if (highlightFacility && FACILITY_COORDS[highlightFacility]) {
@@ -2845,10 +2867,11 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
     });
 
     // 現在地マーカー（最前面）
-    routeLayer += '<g>'
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="16" fill="#185FA5" opacity="0.25"/>'
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="11" fill="#185FA5"/>'
-      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">現在地</text>'
+    const fromLabel = fp_override ? '案内' : '現在地';
+    routeLayer += '<g>'\
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="16" fill="#185FA5" opacity="0.25"/>'\
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="11" fill="#185FA5"/>'\
+      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">'+fromLabel+'</text>'\
       + '</g>';
   }
 
