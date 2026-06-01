@@ -2868,10 +2868,10 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility, fromC
 
     // 現在地マーカー（最前面）
     const fromLabel = fp_override ? '案内' : '現在地';
-    routeLayer += '<g>'\
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="16" fill="#185FA5" opacity="0.25"/>'\
-      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="11" fill="#185FA5"/>'\
-      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">'+fromLabel+'</text>'\
+    routeLayer += '<g>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="16" fill="#185FA5" opacity="0.25"/>'
+      + '<circle cx="'+fp.cx+'" cy="'+fp.cy+'" r="11" fill="#185FA5"/>'
+      + '<text x="'+fp.cx+'" y="'+(fp.cy+3)+'" text-anchor="middle" font-size="6" fill="#fff" font-weight="700" font-family="sans-serif">'+fromLabel+'</text>'
       + '</g>';
   }
 
