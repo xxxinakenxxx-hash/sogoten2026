@@ -830,7 +830,7 @@ const MAIN_CATS = [
   {icon:'ti-droplet',     label:'チョコ・製菓素材',   sub:'チョコ・カカオ・製菓材料',   bg:'#FAECE7',ic:'#993C1D', q:'チョコレート クーベルチュール カカオ 製菓材料 製菓素材'},
   {icon:'ti-milk',        label:'乳製品・油脂',       sub:'クリーム・バター・油脂',     bg:'#E6F1FB',ic:'#185FA5', q:'生クリーム 乳製品 バター マーガリン ショートニング 油脂 チーズ'},
   {icon:'ti-apple',       label:'フルーツ・甘味・ナッツ', sub:'ピューレ・砂糖・蜂蜜・ナッツ', bg:'#EAF3DE',ic:'#3B6D11', q:'フルーツ ピューレ 砂糖 蜂蜜 ナッツ アーモンド メープル ドライフルーツ'},
-  {icon:'ti-leaf',        label:'和素材・調味・香料',  sub:'餡・酵母・スパイス・香料',   bg:'#E1F5EE',ic:'#0F6E56', q:'あんこ 餡 和菓子 酵母 イースト スパイス 香料 フレーバー 寒天'},
+  {icon:'ti-leaf',        label:'和素材・調味・香料・洋酒',  sub:'餡・酵母・香料・洋酒',   bg:'#E1F5EE',ic:'#0F6E56', q:'あんこ 餡 和菓子 酵母 イースト スパイス 香料 フレーバー 寒天 洋酒 リキュール 酒 ラム ブランデー キルシュ コアントロー'},
   {icon:'ti-snowflake',   label:'冷凍生地・冷凍食材',  sub:'冷凍パン生地・冷凍フルーツ・冷凍和菓子', bg:'#D7F0EE',ic:'#1A6E64', q:'冷凍 冷凍生地 冷凍食材 冷凍パン生地 冷凍ケーキ 冷凍野菜 冷凍フルーツ 冷凍肉 冷凍魚 冷凍食品 冷凍和菓子 冷凍マカロン 冷凍ドーナツ 冷凍カヌレ 冷凍クッキー 冷凍白玉 冷凍わらび餅 冷凍カスタード フローズン 冷食 半製品', excludeBusiness:['機械','包材']},
   {icon:'ti-tool',        label:'機械・設備',          sub:'品目別に選べます',           bg:'#FFF3CD',ic:'#BA7517', q:'MACHINE', isMachine:true},
   {icon:'ti-package',     label:'包材・パッケージ',    sub:'箱・袋・ラベル・リボン',     bg:'#EEEDFE',ic:'#534AB7', q:'包材 パッケージ 箱 袋 ラベル リボン 紙器 缶'},
@@ -855,7 +855,7 @@ const CAT_I18N = {
   'チョコ・製菓素材':     {en:['Chocolate & Confectionery','Chocolate, cacao, baking ingredients'], zh:['巧克力·制果原料','巧克力·可可·制果材料'], ko:['초콜릿·제과 재료','초콜릿·카카오·제과 재료']},
   '乳製品・油脂':         {en:['Dairy & Fats','Cream, butter, oils & fats'], zh:['乳制品·油脂','奶油·黄油·油脂'], ko:['유제품·유지','크림·버터·유지']},
   'フルーツ・甘味・ナッツ': {en:['Fruit, Sweeteners & Nuts','Purée, sugar, honey, nuts'], zh:['水果·甜味·坚果','果泥·砂糖·蜂蜜·坚果'], ko:['과일·감미료·견과','퓌레·설탕·꿀·견과']},
-  '和素材・調味・香料':    {en:['Japanese Ingredients & Seasonings','Bean paste, yeast, spices, flavors'], zh:['和风原料·调味·香料','馅·酵母·香辛料·香料'], ko:['일본 재료·조미·향료','팥소·효모·향신료·향료']},
+  '和素材・調味・香料・洋酒':    {en:['Japanese Ingredients, Seasonings & Liquor','Bean paste, yeast, flavors, liquor'], zh:['和风原料·调味·香料·洋酒','馅·酵母·香料·洋酒'], ko:['일본 재료·조미·향료·양주','팥소·효모·향료·양주']},
   '冷凍生地・冷凍食材':    {en:['Frozen Dough & Ingredients','Frozen bread dough, fruit, wagashi'], zh:['冷冻面团·冷冻食材','冷冻面包面团·冷冻水果·冷冻和果子'], ko:['냉동 반죽·냉동 식재','냉동 빵 반죽·냉동 과일·냉동 화과자']},
   '機械・設備':          {en:['Machinery & Equipment','Choose by item'], zh:['机械·设备','可按品类选择'], ko:['기계·설비','품목별로 선택']},
   '包材・パッケージ':     {en:['Packaging Materials','Boxes, bags, labels, ribbons'], zh:['包材·包装','箱·袋·标签·丝带'], ko:['포장재·패키지','상자·봉투·라벨·리본']},
@@ -2730,14 +2730,25 @@ function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility) {
     : '<rect x="2" y="2" width="557" height="730" fill="none" stroke="#999" stroke-width="1.5" rx="4"/>';
 
   // ── 施設ラベル ──
+  // 出入口・総合案内はチラシ同様、大きく赤く強調する
+  const EMPH_FAC = {'出入口(A)': true, '総合案内': true};
   let facLayer = '';
   Object.entries(FACILITY_COORDS).forEach(function(entry) {
     const name = entry[0], fac = entry[1];
-    const tw = name.length * 5.5 + 14;
-    facLayer += '<g>'
-      + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-7)+'" width="'+tw+'" height="13" rx="3" fill="#0F6E56" opacity="0.92"/>'
-      + '<text x="'+fac.cx+'" y="'+(fac.cy+2.5)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
-      + '</g>';
+    if (EMPH_FAC[name]) {
+      const fs = 9, h = 20;
+      const tw = name.length * 9 + 22;
+      facLayer += '<g>'
+        + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-h/2)+'" width="'+tw+'" height="'+h+'" rx="4" fill="#E2342F" stroke="#fff" stroke-width="1.5"/>'
+        + '<text x="'+fac.cx+'" y="'+(fac.cy+3.2)+'" text-anchor="middle" font-size="'+fs+'" fill="#fff" font-weight="800" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
+        + '</g>';
+    } else {
+      const tw = name.length * 5.5 + 14;
+      facLayer += '<g>'
+        + '<rect x="'+(fac.cx-tw/2)+'" y="'+(fac.cy-7)+'" width="'+tw+'" height="13" rx="3" fill="#0F6E56" opacity="0.92"/>'
+        + '<text x="'+fac.cx+'" y="'+(fac.cy+2.5)+'" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="700" font-family="sans-serif">'+(fac.icon||'')+' '+name+'</text>'
+        + '</g>';
+    }
   });
 
   // ── 施設ハイライト（セミナー会場など） ──
