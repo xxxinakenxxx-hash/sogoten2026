@@ -1,170 +1,246 @@
-function initFuse() {
-  if (typeof Fuse === 'undefined') return;
-  fuse = new Fuse(P, {
-    keys: [
-      { name: 'company', weight: 3 },
-      { name: 'tags',    weight: 2 },
-    ],
-    threshold:       0.35,
-    includeScore:    true,
-    ignoreLocation:  true,
-    minMatchCharLength: 2,
-  });
+// ============================================================
+// アンケート（帰り際）
+// ============================================================
+function showSurvey() {
+  let rating = 0;
+  const booths = visitedBooths.slice(0, 8);  // 最大8ブース表示
+
+  const boothChecks = booths.map((b, i) => {
+    const co = P.find(p => p.booth === b);
+    return `<div class="bc" id="bc${i}" onclick="toggleBooth(${i})">
+      <span class="bc-num">${b}</span>
+      <span class="bc-co">${co ? co.company : b}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="res-hdr">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">帰り際アンケート</div>
+    </div>
+    <div class="survey-wrap">
+      <div class="survey-title">本日はいかがでしたか？</div>
+      <div class="survey-sub">1タップで回答できます</div>
+      <div class="rating-row">
+        <button class="rating-btn" id="r1" onclick="setRating(1)">😊</button>
+        <button class="rating-btn" id="r2" onclick="setRating(2)">😐</button>
+        <button class="rating-btn" id="r3" onclick="setRating(3)">😞</button>
+      </div>
+      ${booths.length ? `
+      <div class="survey-q2">良かったブースを教えてください（複数OK）</div>
+      <div class="booth-checks" id="boothChecks">${boothChecks}</div>
+      ` : ''}
+      <button class="submit-btn" onclick="submitSurvey()">送信する</button>
+    </div>
+  </div>`;
+
+  window._surveyRating = 0;
+  window._surveyBooths = [];
 }
 
-// カテゴリ検索で固定追加するブース
-// 業種除外フィルタに引っかかるが表示すべき例外出展社
-const CAT_FIXED_BOOTHS = {
-  '冷凍生地・冷凍食材': ['C02'], // 株式会社七洋製作所（機械業種だが冷凍食材も扱う）
-};
-
-function searchCat(idx) {
-  const c = MAIN_CATS[idx];
-  search(c.q, c.label, c.excludeBusiness, CAT_FIXED_BOOTHS[c.label] || [], true);
+function setRating(r) {
+  window._surveyRating = r;
+  [1,2,3].forEach(i => document.getElementById('r'+i).classList.toggle('on', i===r));
 }
 
-function search(q, label, excludeBusiness, fixedBooths, tokenized) {
-  showLoading();
-  searchCount++;
-
-  const qNorm = q.trim().replace(/[\u3000\s]/g, '').toLowerCase();
-  if (!qNorm) { showResults([], label); return; }
-
-  const resultMap = new Map();
-
-  // ── 方式1: 2段階タグ検索（日本語自然文・音声入力対応）──
-  // tokenized=true（カテゴリ検索）は、語を空白で分割した「確定キーワード」だけを使い、
-  // 「タグが指定語を含む」一方向一致にする。これにより "冷凍和菓子" の中の "和菓子" のような
-  // 部分語が他カテゴリの商品を引き込む誤検出を防ぐ。
-  const matchedKws = new Set();
-  if (tokenized) {
-    q.toLowerCase().split(/[\u3000\s]+/).forEach(tok => {
-      const t = tok.trim();
-      if (t.length >= 2) matchedKws.add(t);
-    });
+function toggleBooth(i) {
+  const el = document.getElementById('bc'+i);
+  const b  = visitedBooths[i];
+  if (el.classList.toggle('on')) {
+    if (!window._surveyBooths.includes(b)) window._surveyBooths.push(b);
   } else {
-    P.forEach(item => {
-      (item.tags || []).forEach(tag => {
-        const t = tag.trim().toLowerCase();
-        if (t.length >= 2 && qNorm.indexOf(t) >= 0) matchedKws.add(t);
-      });
-    });
-    if (qNorm.length >= 2) matchedKws.add(qNorm);
+    window._surveyBooths = window._surveyBooths.filter(x => x !== b);
   }
-
-  P.forEach(item => {
-    // 業種除外フィルタ（例：冷凍カテゴリで機械・包材を除外）
-    if (excludeBusiness && excludeBusiness.indexOf(item.business) >= 0) return;
-
-    let score = 0;
-    const matched = [];
-    (item.tags || []).forEach(tag => {
-      const t = tag.trim().toLowerCase();
-      if (!t || t.length < 2) return;
-      for (const kw of matchedKws) {
-        const hit = tokenized ? (t.indexOf(kw) >= 0) : (t.indexOf(kw) >= 0 || kw.indexOf(t) >= 0);
-        if (hit) {
-          score += kw.length;
-          if (matched.indexOf(tag) < 0) matched.push(tag);
-          break;
-        }
-      }
-    });
-    // 社名一致はフリーテキスト検索のみ（カテゴリ検索では語ブロブとの偶発一致を避ける）
-    if (!tokenized) {
-      const co = item.company.replace(/[株式会社㈱㈲有限会社]/g, '').toLowerCase();
-      if (co.length >= 2 && (qNorm.indexOf(co) >= 0 || co.indexOf(qNorm) >= 0)) {
-        score += 20; matched.push(item.company);
-      }
-    }
-    if (score > 0) resultMap.set(item.booth + '|' + item.company, { item, score, matched });
-  });
-
-  // ── 方式2: Fuse.js ファジー検索（誤字・略語・英語対応）──
-  // カテゴリ検索では Fuse は既存ヒットの加点のみ行い、新規追加はしない（あいまい一致の漏れ防止）。
-  if (fuse) {
-    fuse.search(q, { limit: 20 }).forEach(r => {
-      // 業種除外フィルタ
-      if (excludeBusiness && excludeBusiness.indexOf(r.item.business) >= 0) return;
-
-      const key = r.item.booth + '|' + r.item.company;
-      const fs  = Math.round((1 - (r.score || 0)) * 8);
-      if (resultMap.has(key)) {
-        resultMap.get(key).score += fs;
-      } else if (fs >= 2 && !tokenized) {
-        resultMap.set(key, { item: r.item, score: fs, matched: [] });
-      }
-    });
-  }
-
-  const top = [...resultMap.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20)
-    .map(r => Object.assign({}, r.item, { score: r.score, matchedTags: r.matched }));
-
-  // ── 施設マッチ（アウトレット市・フードコーナー等）──
-  const facilityHits = [];
-  Object.entries(FACILITY_TAGS).forEach(([fname, tags]) => {
-    for (const tag of tags) {
-      if (qNorm.indexOf(tag.toLowerCase()) >= 0 || tag.toLowerCase().indexOf(qNorm) >= 0) {
-        facilityHits.push(fname);
-        break;
-      }
-    }
-  });
-
-  // アンケート用ブース履歴 & actionLog
-  top.forEach(r => {
-    if (visitedBooths.indexOf(r.booth) < 0) visitedBooths.push(r.booth);
-    logBooth(r.booth, r.company);
-  });
-  logKeyword(q);
-
-  // ログ記録（同意者のみ）
-  const booths = top.map(r => r.booth).join(',');
-  if (localStorage.getItem(CONSENT_KEY) === '1') {
-    sendLog({ keyword: q, lang: lang, booth: booths, found: top.length > 0 ? 'あり' : 'なし', searchCount: searchCount, gyotai: visitorGyotai, qr: visitorQRCode });
-  }
-
-  // 固定追加ブース（除外フィルタの例外）
-  if (fixedBooths && fixedBooths.length) {
-    fixedBooths.forEach(function(bid) {
-      if (top.find(r => r.booth === bid)) return; // 既にある場合はスキップ
-      const item = P.find(p => p.booth === bid);
-      if (item) top.push(Object.assign({}, item, { score: 1, matchedTags: item.tags || [] }));
-    });
-  }
-
-  // ── 該当なし & AI ON → AIコンシェルジュにフォールバック ──
-  // ただし施設ヒットがある場合はAIを呼ばず、施設カードだけ表示する
-  if (top.length === 0 && AI_ENABLED) {
-    showResults([], label, facilityHits);
-    if (facilityHits.length > 0) return;
-    // 「該当なし」メッセージの下にAI提案を追加
-    callOpenAI(q).then(reply => {
-      const noResEl = document.getElementById('aiSearchFallback');
-      if (!noResEl) return;
-      noResEl.innerHTML = '<div style="margin:12px 16px 0;background:#E1F5EE;border-radius:12px;padding:14px;font-size:13px;line-height:1.7">'
-        + '<div style="font-weight:600;color:#0F6E56;margin-bottom:6px">&#x1F916; ' + tr('aiSuggestTitle') + '</div>'
-        + '<div style="color:#1a1a18">' + escapeHtml(reply).replace(/\n/g,'<br>') + '</div>'
-        + '</div>';
-    }).catch(() => {});
-    return;
-  }
-
-  showResults(top, label, facilityHits);
 }
 
-
-function sendLog(params) {
-  const url = GAS_URL + '?action=log'
-    + '&keyword=' + encodeURIComponent(params.keyword)
-    + '&lang='    + encodeURIComponent(lang)
-    + '&booth='   + encodeURIComponent(params.booth || '')
-    + '&found='   + encodeURIComponent(params.found)
-    + '&searchCount=' + (params.searchCount || 0)
-    + '&session=' + SESSION_ID
-    + '&gyotai='  + encodeURIComponent(params.gyotai || visitorGyotai)
-    + '&qr='      + encodeURIComponent(params.qr || visitorQRCode);
+function submitSurvey() {
+  const rating = window._surveyRating || 0;
+  const booths = (window._surveyBooths || []).join(',');
+  const url = GAS_URL + '?action=survey'
+    + '&rating='      + rating
+    + '&booths='      + encodeURIComponent(booths)
+    + '&searchCount=' + searchCount
+    + '&session='     + SESSION_ID;
   fetch(url).catch(() => {});
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen ld-screen">
+    <div style="font-size:48px">🎉</div>
+    <div class="ld-txt" style="font-size:18px;font-weight:600;color:#1a1a18">ありがとうございました！</div>
+    <div class="ld-txt">またのご来場をお待ちしています</div>
+  </div>`;
+}
+
+// ============================================================
+// 退場レポート
+// ============================================================
+function showExitReport() {
+  _currentView = showExitReport;
+  const elapsed  = Math.floor((Date.now() - appStartTime) / 60000);
+  const hours    = Math.floor(elapsed / 60);
+  const minutes  = elapsed % 60;
+  const timeStr  = hours > 0 ? tr('timeHM', hours, minutes) : tr('timeM', minutes);
+
+  const kws      = actionLog.searchKeywords.slice(-12);
+  const booths   = actionLog.viewedBooths.slice(0, 10);
+  const memoCount= myMemos.length;
+
+  const kwHtml = kws.length
+    ? kws.map(k => `<span class="report-kw">${escapeHtml(k.q.replace(/^\[AI\] /,''))}</span>`).join('')
+    : '<span style="color:#888780;font-size:13px">' + tr('erNoSearch') + '</span>';
+
+  const boothHtml = booths.length
+    ? booths.map(b => `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #e8e7e1;font-size:13px">
+        <span style="background:#FAEEDA;color:#854F0B;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0">${escapeHtml(b.booth)}</span>
+        <span>${escapeHtml(b.company)}</span>
+      </div>`).join('')
+    : '<div style="color:#888780;font-size:13px">' + tr('erNoBooths') + '</div>';
+
+  const bizHtml = visitorGyotai
+    ? `<span class="business-tag">${escapeHtml(visitorGyotai)}</span>`
+    : '';
+
+  let reportSat = 0;
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="res-hdr">
+      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <div class="res-q">${tr('erFootprintSurvey')}</div>
+    </div>
+    <div class="report-wrap">
+      <div class="report-hero">
+        <div class="report-hero-ttl">${tr('erHeroTtl')}</div>
+      </div>
+
+      <div class="report-sec" style="background:#f9fffe;border:1.5px solid #0F6E56">
+        <div class="report-sec-ttl" style="margin-bottom:14px"><i class="ti ti-mood-smile" style="color:#0F6E56"></i>${tr('erSurveyTtl')}</div>
+
+        <div class="sat-row-inline">
+          <div class="sat-lbl-inline">${tr('erSatEvent')}</div>
+          <div class="satisfaction-row">
+            <button class="sat-btn" data-cat="event" data-val="5" onclick="setSatV2(this,'event',5)">🤩</button>
+            <button class="sat-btn" data-cat="event" data-val="4" onclick="setSatV2(this,'event',4)">😄</button>
+            <button class="sat-btn" data-cat="event" data-val="3" onclick="setSatV2(this,'event',3)">😊</button>
+            <button class="sat-btn" data-cat="event" data-val="2" onclick="setSatV2(this,'event',2)">😐</button>
+            <button class="sat-btn" data-cat="event" data-val="1" onclick="setSatV2(this,'event',1)">😢</button>
+          </div>
+        </div>
+
+        <div class="sat-row-inline" style="margin-top:12px">
+          <div class="sat-lbl-inline">${tr('erSatApp')}</div>
+          <div class="satisfaction-row">
+            <button class="sat-btn" data-cat="app" data-val="5" onclick="setSatV2(this,'app',5)">🤩</button>
+            <button class="sat-btn" data-cat="app" data-val="4" onclick="setSatV2(this,'app',4)">😄</button>
+            <button class="sat-btn" data-cat="app" data-val="3" onclick="setSatV2(this,'app',3)">😊</button>
+            <button class="sat-btn" data-cat="app" data-val="2" onclick="setSatV2(this,'app',2)">😐</button>
+            <button class="sat-btn" data-cat="app" data-val="1" onclick="setSatV2(this,'app',1)">😢</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <div class="sat-lbl-inline" style="margin-bottom:6px">${tr('erComment')}</div>
+          <textarea id="surveyComment" class="mm-textarea" rows="2" placeholder="${tr('erCommentPlaceholder')}"></textarea>
+        </div>
+
+        <button class="report-submit" onclick="submitExitReport()" style="margin-top:14px">
+          <i class="ti ti-send"></i> ${tr('erSubmit')}
+        </button>
+      </div>
+
+      <div class="report-subhead">
+        <i class="ti ti-footprints" style="color:#0F6E56;font-size:20px"></i>
+        <div>
+          <div class="report-subhead-ttl">${tr('erFootprintTtl')}</div>
+          <div class="report-subhead-sub">${tr('erFootprintSub', bizHtml)}</div>
+        </div>
+      </div>
+
+      <div class="report-stats">
+        <div class="rstat"><div class="rstat-num">${kws.length}</div><div class="rstat-lbl">${tr('erStatSearch')}</div></div>
+        <div class="rstat"><div class="rstat-num">${booths.length}</div><div class="rstat-lbl">${tr('erStatBooth')}</div></div>
+        <div class="rstat"><div class="rstat-num">${memoCount}</div><div class="rstat-lbl">${tr('erStatMemo')}</div></div>
+        <div class="rstat"><div class="rstat-num">${timeStr}</div><div class="rstat-lbl">${tr('erStatStay')}</div></div>
+      </div>
+
+      <div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-search" style="color:#0F6E56"></i>${tr('erSecKeywords')}</div>
+        <div class="report-kw-list">${kwHtml}</div>
+      </div>
+
+      <div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-building" style="color:#185FA5"></i>${tr('erSecBooths')}</div>
+        ${boothHtml}
+      </div>
+
+      ${memoCount > 0 ? `<div class="report-sec">
+        <div class="report-sec-ttl"><i class="ti ti-notebook" style="color:#534AB7"></i>${tr('erSecMemo', memoCount)}</div>
+        <div style="font-size:13px;color:#73726c">${tr('erMemoNote')}</div>
+        <button onclick="showMyMemo()" style="margin-top:8px;background:#534AB7;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">${tr('erMemoBtn')}</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+
+  window._reportSatEvent = 0;
+  window._reportSatApp   = 0;
+}
+
+function setSatV2(btn, cat, v) {
+  if (cat === 'event') window._reportSatEvent = v;
+  else if (cat === 'app') window._reportSatApp = v;
+  // 同じカテゴリの他ボタンの選択解除
+  document.querySelectorAll('.sat-btn[data-cat="' + cat + '"]').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// 旧関数も互換のため残す
+function setSat(v, btn) {
+  window._reportSatEvent = v;
+  document.querySelectorAll('.sat-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function submitExitReport() {
+  const ratingEvent = window._reportSatEvent || 0;
+  const ratingApp   = window._reportSatApp   || 0;
+  const commentEl   = document.getElementById('surveyComment');
+  const comment     = commentEl ? (commentEl.value || '').trim() : '';
+  const kws    = actionLog.searchKeywords.map(k => k.q).join(',');
+  const booths = actionLog.viewedBooths.map(b => b.booth).join(',');
+  const elapsed = Math.floor((Date.now() - appStartTime) / 60000);
+
+  // GASに記録
+  const url = GAS_URL + '?action=survey'
+    + '&rating='      + ratingEvent
+    + '&appRating='   + ratingApp
+    + '&comment='     + encodeURIComponent(comment)
+    + '&booths='      + encodeURIComponent(booths)
+    + '&searchCount=' + actionLog.searchKeywords.length
+    + '&session='     + SESSION_ID
+    + '&gyotai='      + encodeURIComponent(visitorGyotai)
+    + '&elapsed='     + elapsed
+    + '&keywords='    + encodeURIComponent(kws.slice(0,200));
+  fetch(url).catch(() => {});
+
+  // 退場記録
+  recordEntryExit('退場');
+
+  // セッションデータをクリア
+  try { sessionStorage.removeItem('sogoten2026_actions'); } catch(e) {}
+
+  const renderThanks = () => {
+    _currentView = renderThanks;
+    document.getElementById('screen').innerHTML = `
+    <div class="screen ld-screen" style="padding:80px 24px;text-align:center">
+      <div style="font-size:64px">🎉</div>
+      <div style="font-size:20px;font-weight:700;color:#1a1a18;margin-top:12px">${tr('erThanksBig')}</div>
+      <div style="font-size:14px;color:#73726c;margin-top:8px;line-height:1.6">${tr('erThanksSub')}</div>
+      <div style="margin-top:32px;padding:16px;background:#f5f5f3;border-radius:12px;font-size:12px;color:#73726c;line-height:1.6">
+        ${tr('erMemoTransfer')}
+      </div>
+      ${myMemos.length > 0 ? `<button onclick="showMyMemo()" style="margin-top:16px;background:#534AB7;color:#fff;border:none;padding:13px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">${tr('erSendMemoBtn')}</button>` : ''}
+    </div>`;
+  };
+  renderThanks();
 }
