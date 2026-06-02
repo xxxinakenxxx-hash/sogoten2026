@@ -2,16 +2,9 @@
 // 起動時：GASからデータ取得
 // ============================================================
 window.addEventListener('load', async () => {
-  function dbg(msg) {
-    const el = document.getElementById('debugLog');
-    if(el) el.innerHTML += msg + '<br>';
-  }
-  dbg('1:load開始');
-
   // 通路グラフ構築（即時）
   CORRIDOR_GRAPH = buildCorridorGraph();
   console.log('✅ 通路グラフ構築: ノード'+CORRIDOR_GRAPH.nodes.length+'個, エッジ'+CORRIDOR_GRAPH.edges.length+'本');
-  dbg('2:通路グラフ完了');
 
   // ローディング表示
   document.getElementById('screen').innerHTML = `
@@ -20,7 +13,6 @@ window.addEventListener('load', async () => {
       <div style="color:#73726c;font-size:14px">${tr('loading')}</div>
       <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
     </div>`;
-  dbg('3:ローディング表示完了');
 
   // 会場SVG読込（並行）
   const svgPromise = fetch('venue_map.svg')
@@ -33,11 +25,9 @@ window.addEventListener('load', async () => {
       }
     })
     .catch(e => console.warn('会場SVG読込失敗:', e.message));
-  dbg('4:SVG fetch開始');
 
   // GASからデータ取得（完了を待つ・10秒タイムアウト）
   let gasOK = false;
-  dbg('5:GAS fetch開始');
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10000);
@@ -57,7 +47,6 @@ window.addEventListener('load', async () => {
     if (semData.seminars && semData.seminars.length > 0) {
       SEMINARS = semData.seminars;
     }
-    dbg('6:GAS fetch完了 P='+P.length);
     // AI補助資料（失敗してもアプリは動作する）
     try {
       if (docRes) {
@@ -70,27 +59,22 @@ window.addEventListener('load', async () => {
     } catch(e) { console.warn('AI補助資料取得失敗:', e.message); }
   } catch (e) {
     console.warn('GAS未接続。サンプルデータで動作。', e.message);
-    dbg('6:GAS fetch失敗:' + e.message);
   }
 
   // GAS失敗時のみフォールバック
   if(!gasOK) {
     P = SAMPLE_P;
     SEMINARS = SAMPLE_SEMINARS;
-    dbg('6.5:フォールバック発動');
   }
 
   // SVG読込も待つ
   await svgPromise;
-  dbg('7:SVG完了');
 
   // Fuse.js初期化
   initFuse();
-  dbg('8:initFuse完了');
 
   // 起動フロー判定
   const params = new URLSearchParams(location.search);
-  dbg('9:起動フロー判定');
 
   // ?reset=1 でlocalStorage・sessionStorageをクリアして同意画面から再スタート
   if (params.get('reset') === '1') {
@@ -99,7 +83,6 @@ window.addEventListener('load', async () => {
     history.replaceState({}, '', location.pathname + (params.get('dev')==='1' ? '?dev=1' : ''));
     visitorGyotai = '';
     visitorQRCode = '';
-    dbg('10:reset→showConsentScreen');
     showConsentScreen();
     return;
   }
@@ -111,20 +94,16 @@ window.addEventListener('load', async () => {
     visitorQRCode = 'reception';
     visitorGyotai = '';
     saveVisitor();
-    dbg('10:reception→showReceptionHome');
     showReceptionHome();
     return;
   }
 
   const hasConsent = localStorage.getItem(CONSENT_KEY) === '1';
   if (!hasConsent) {
-    dbg('10:同意なし→showConsentScreen');
     showConsentScreen();
   } else if (!visitorQRCode) {
-    dbg('10:QRなし→showQRScreen');
     showQRScreen();
   } else {
-    dbg('10:全部OK→showHome');
     showHome();
   }
 });
