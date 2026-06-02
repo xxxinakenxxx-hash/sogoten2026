@@ -314,17 +314,8 @@ body.reception-mode #map-svg-wrap { min-height: 70vh; }
 // ============================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
 // ?ai=1 のときだけOpenAI呼び出し。未指定はデモモード（APIキー不要）
-let AI_ENABLED = new URLSearchParams(location.search).get('ai') === '1';
+let AI_ENABLED = true;
 let RECEPTION_MODE = false;
-function toggleAI() {
-  AI_ENABLED = !AI_ENABLED;
-  localStorage.setItem('sogoten2026_ai', AI_ENABLED ? '1' : '0');
-  showHome();
-}
-// localStorage復元（ページ再読込後も維持）
-if (localStorage.getItem('sogoten2026_ai') !== null) {
-  AI_ENABLED = localStorage.getItem('sogoten2026_ai') === '1';
-}
 
 // ============================================================
 // 状態管理
@@ -783,15 +774,6 @@ window.addEventListener('load', async () => {
     visitorGyotai = '';
     visitorQRCode = '';
     showConsentScreen();
-    return;
-  }
-
-  // ?dev=1 で同意・QRをスキップ（開発用）
-  if (params.get('dev') === '1') {
-    visitorGyotai = 'パン製造業';
-    visitorQRCode = 'dev';
-    saveVisitor();
-    showHome();
     return;
   }
 
@@ -1296,16 +1278,7 @@ function showHome() {
         <span style="display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-check"></i> ${tr('exitMain')}</span>
       </button>
     </div>
-    <div style="padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between">
-      <a href="?reset=1" style="font-size:11px;color:#b4b2a9;text-decoration:none">
-        ⚙️ 同意・QR画面を再確認（開発用）
-      </a>
-      <div onclick="toggleAI()" style="display:flex;align-items:center;gap:6px;cursor:pointer;-webkit-tap-highlight-color:transparent">
-        <span style="font-size:11px;font-weight:600;color:${AI_ENABLED ? '#0F6E56' : '#888780'}">${AI_ENABLED ? '🤖 AI ON' : '🔧 AI OFF'}</span>
-        <div style="width:36px;height:20px;border-radius:10px;background:${AI_ENABLED ? '#0F6E56' : '#ccc'};position:relative;transition:background .2s">
-          <div style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:${AI_ENABLED ? '18px' : '2px'};transition:left .2s"></div>
-        </div>
-      </div>
+    <div style="padding:0 16px 16px;display:flex;align-items:center;justify-content:flex-end">
     </div>
   </div>`;
 }
