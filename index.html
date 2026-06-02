@@ -963,7 +963,7 @@ const T = {
     // 検索結果
     resMemo:'メモ', resEdit:'編集', resMap:'📍地図', resBooth:'ブース',
     resMapAll:(n)=>`MAPで全件表示（${n}件）`, resNotFound:'見つかりませんでした',
-    resNotFoundAi:'AIコンシェルジュが下に提案を表示します...', resNotFoundTry:'別のキーワードで検索してみてください',
+    resNotFoundAi:'AIコンシェルジュが下に提案を表示します...', resNotFoundTry:'別のキーワードで検索、もしくはAIコンシェルジュに聞いてみてください',
     resCount:(n)=>`${n}件`, resMsg:(label,n)=>`「${label}」に関連するブースが${n}件見つかりました`,
     // MAP
     mapRouteTitle:'現在地から経路を表示', mapRouteHint:'（今いるブース番号を入力）', mapRoutePlaceholder:'例: A01, B15...', mapRouteBtn:'経路',
@@ -2531,7 +2531,7 @@ function showResults(results, label, facilityHits) {
       <i class="ti ti-map"></i> ${tr('resMapAll', _lastBoothIds.length)}
     </button>` : '';
 
-  const noRes = !results.length ? `
+  const noRes = !results.length && !(facilityHits && facilityHits.length) ? `
     <div class="no-res">
       <i class="ti ti-search"></i>
       <h3>${tr('resNotFound')}</h3>
