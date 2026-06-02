@@ -2090,8 +2090,8 @@ function sendInquiryToGAS(p) {
 // 連絡先入力フォーム
 function showInquiryForm(booth, company, inquiryText) {
   // 来場者DB照合を試みる
-  const dbUrl = GAS_URL + '?action=visitor&qr=' + encodeURIComponent(visitorQRCode || '');
-
+  const dbUrl = GAS_URL + '?action=visitor&qr=' + encodeURIComponent(visitorQRCode || '')
+  + '&token=marubishi2026';
   // フォームを先に表示（DB照合は非同期で埋める）
   const modal = document.createElement('div');
   modal.id = 'inquiryModal';
