@@ -296,6 +296,7 @@ function showRoute() {
     wrap.innerHTML = buildMapSVG(highlightIds, focusPos, fromBooth, _facilityFocus);
     applyViewBox();
   }
+}
 
 function buildMapSVG(highlightIds, focusPos, fromBooth, highlightFacility, fromCoords) {
   // ── 会場レイアウト（venue_map.svgの中身を背景に） ──
