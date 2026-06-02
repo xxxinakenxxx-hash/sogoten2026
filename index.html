@@ -2363,7 +2363,22 @@ function showSeminars() {
 
   let html = '';
   for (const [date, items] of Object.entries(byDate)) {
-    items.sort((a, b) => (a.time > b.time ? 1 : -1));
+    items.sort((a, b) => {
+      const toMin = t => {
+        const ampm = String(t).match(/^(AM|PM)(\d+):(\d+)/i);
+        if (ampm) {
+          let h = parseInt(ampm[2], 10);
+          const m = parseInt(ampm[3], 10);
+          if (ampm[1].toUpperCase() === 'PM' && h !== 12) h += 12;
+          if (ampm[1].toUpperCase() === 'AM' && h === 12) h = 0;
+          return h * 60 + m;
+        }
+        const hm = String(t).match(/(\d+):(\d+)/);
+        if (hm) return parseInt(hm[1], 10) * 60 + parseInt(hm[2], 10);
+        return 9999;
+      };
+      return toMin(a.time) - toMin(b.time);
+    });
     html += `<div style="padding:12px 16px 4px;font-size:13px;font-weight:600;color:#0F6E56;border-bottom:1px solid #e8e7e1">${date}</div>`;
     items.forEach(s => {
       const badge = s.type === '実演'
