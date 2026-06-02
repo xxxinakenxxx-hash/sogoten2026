@@ -28,9 +28,7 @@ function showAIConcierge() {
     <div class="res-hdr">
       <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">${tr('aiTitle')}</div>
-      <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;${AI_ENABLED ? 'background:#E1F5EE;color:#0F6E56' : 'background:#f5f5f3;color:#888780'}">${AI_ENABLED ? tr('aiBadgeLive') : tr('aiBadgeDemo')}</span>
-      <button onclick="enterAIConcierge()" style="background:none;border:none;color:#73726c;font-size:12px;cursor:pointer;padding:4px 8px">${tr('aiReset')}</button>
-    </div>
+      </div>
     <div class="ai-msgs" id="aiMsgs">
       <div style="text-align:center;padding:8px 0 4px">${bizBadge}</div>
       <div class="ai-msg bot">
