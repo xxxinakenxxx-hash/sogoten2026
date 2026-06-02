@@ -3018,8 +3018,10 @@ function search(q, label, excludeBusiness, fixedBooths, tokenized) {
   }
 
   // ── 該当なし & AI ON → AIコンシェルジュにフォールバック ──
+  // ただし施設ヒットがある場合はAIを呼ばず、施設カードだけ表示する
   if (top.length === 0 && AI_ENABLED) {
-    showResults([], label);
+    showResults([], label, facilityHits);
+    if (facilityHits.length > 0) return;
     // 「該当なし」メッセージの下にAI提案を追加
     callOpenAI(q).then(reply => {
       const noResEl = document.getElementById('aiSearchFallback');
