@@ -148,3 +148,4 @@ function showMapForVenue(type, id, label) {
     _lastBoothIds = [];
     showMapScreen(null);
   }
+}
