@@ -3,7 +3,7 @@
 // ============================================================
 function showSurvey() {
   let rating = 0;
-  const booths = visitedBooths.slice(0, 8);  // 最大8ブース表示
+  const booths = visitedBooths.slice(0, 8);
 
   const boothChecks = booths.map((b, i) => {
     const co = P.find(p => p.booth === b);
@@ -61,7 +61,9 @@ function submitSurvey() {
     + '&rating='      + rating
     + '&booths='      + encodeURIComponent(booths)
     + '&searchCount=' + searchCount
-    + '&session='     + SESSION_ID;
+    + '&session='     + SESSION_ID
+    + '&gyotai='      + encodeURIComponent(visitorGyotai || '')
+    + '&qr='          + encodeURIComponent(visitorQRCode || '');
   fetch(url).catch(() => {});
 
   document.getElementById('screen').innerHTML = `
@@ -100,8 +102,6 @@ function showExitReport() {
   const bizHtml = visitorGyotai
     ? `<span class="business-tag">${escapeHtml(visitorGyotai)}</span>`
     : '';
-
-  let reportSat = 0;
 
   document.getElementById('screen').innerHTML = `
   <div class="screen">
@@ -189,12 +189,10 @@ function showExitReport() {
 function setSatV2(btn, cat, v) {
   if (cat === 'event') window._reportSatEvent = v;
   else if (cat === 'app') window._reportSatApp = v;
-  // 同じカテゴリの他ボタンの選択解除
   document.querySelectorAll('.sat-btn[data-cat="' + cat + '"]').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
 }
 
-// 旧関数も互換のため残す
 function setSat(v, btn) {
   window._reportSatEvent = v;
   document.querySelectorAll('.sat-btn').forEach(b => b.classList.remove('on'));
@@ -210,7 +208,6 @@ function submitExitReport() {
   const booths = actionLog.viewedBooths.map(b => b.booth).join(',');
   const elapsed = Math.floor((Date.now() - appStartTime) / 60000);
 
-  // GASに記録
   const url = GAS_URL + '?action=survey'
     + '&rating='      + ratingEvent
     + '&appRating='   + ratingApp
@@ -218,15 +215,14 @@ function submitExitReport() {
     + '&booths='      + encodeURIComponent(booths)
     + '&searchCount=' + actionLog.searchKeywords.length
     + '&session='     + SESSION_ID
-    + '&gyotai='      + encodeURIComponent(visitorGyotai)
+    + '&gyotai='      + encodeURIComponent(visitorGyotai || '')
+    + '&qr='          + encodeURIComponent(visitorQRCode || '')
     + '&elapsed='     + elapsed
     + '&keywords='    + encodeURIComponent(kws.slice(0,200));
   fetch(url).catch(() => {});
 
-  // 退場記録
   recordEntryExit('退場');
 
-  // セッションデータをクリア
   try { sessionStorage.removeItem('sogoten2026_actions'); } catch(e) {}
 
   const renderThanks = () => {
