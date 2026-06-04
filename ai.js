@@ -46,7 +46,6 @@ function showAIConcierge() {
     </div>
   </div>`;
 
-  // 時刻表示
   document.getElementById('aiWelcomeTime').textContent = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
   setTimeout(() => document.getElementById('aiInp') && document.getElementById('aiInp').focus(), 300);
 }
@@ -65,16 +64,13 @@ function aiSend() {
   inp.value = '';
   inp.style.height = 'auto';
 
-  // ユーザーメッセージ表示
   appendAiMsg('user', msg);
   aiHistory.push({role: 'user', content: msg});
 
-  // ローディング表示
   const loadId = 'aiLoad_' + Date.now();
   appendAiMsg('bot', '...', loadId);
   document.getElementById('aiSendBtn').disabled = true;
 
-  // ログ
   logKeyword('[AI] ' + msg);
 
   callOpenAI(msg).then(reply => {
@@ -83,10 +79,7 @@ function aiSend() {
     aiHistory.push({role: 'assistant', content: reply});
     document.getElementById('aiSendBtn').disabled = false;
 
-    // AI回答に含まれるブース番号からブース一覧を生成
     appendSearchShortcut(loadEl, msg, reply);
-
-    // 連絡カード機能は削除（マイメモ→出展社問い合わせ機能で代替）
     scrollAiToBottom();
   }).catch(err => {
     const loadEl = document.getElementById(loadId);
@@ -96,11 +89,8 @@ function aiSend() {
 }
 
 async function callOpenAI(userMsg) {
-  // AIなしモードはデモレスポンスに即フォールバック
   if (!AI_ENABLED) return demoAIResponse(userMsg);
 
-  // 出展社リスト：タグの先頭一致スコアで関連度を計算して渡す
-  // 質問キーワードがタグの早い位置にある社ほど上位に表示される
   const qNormAI = userMsg.replace(/[\s　。、？！]+/g, '').toLowerCase();
   let contextBooths = [];
   if (qNormAI.length >= 2) {
@@ -109,9 +99,9 @@ async function callOpenAI(userMsg) {
       let score = 0;
       tags.forEach((tag, idx) => {
         const t = tag.toLowerCase();
-        if (t === qNormAI) score += 100 - idx;         // 完全一致：タグ順で重み付け
-        else if (t.includes(qNormAI)) score += 50 - idx; // 部分一致
-        else if (qNormAI.includes(t) && t.length >= 2) score += 20 - idx; // 逆包含
+        if (t === qNormAI) score += 100 - idx;
+        else if (t.includes(qNormAI)) score += 50 - idx;
+        else if (qNormAI.includes(t) && t.length >= 2) score += 20 - idx;
       });
       return { p, score };
     });
@@ -120,6 +110,7 @@ async function callOpenAI(userMsg) {
   } else {
     contextBooths = P.slice(0, 80);
   }
+
   const boothContext = contextBooths.map(p =>
     `${p.booth} ${p.company}：${(p.tags||[]).slice(0,5).join('、')}`
   ).join('\n');
@@ -128,7 +119,6 @@ async function callOpenAI(userMsg) {
     `[${s.date} ${s.time}/${s.type||'セミナー'}] ${s.title}${s.speaker ? '／登壇: '+s.speaker : ''}（${s.venue}・${s.reservation}）`
   ).join('\n');
 
-  // AI補助資料：カテゴリ別にグルーピング
   let aiDocContext = '';
   if (AI_DOC && AI_DOC.length > 0) {
     const byCat = {};
@@ -181,7 +171,6 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 7. 必ず${({ja:'日本語',en:'英語',zh:'中国語',ko:'韓国語'})[lang]||'日本語'}で回答する（来場者が選択した表示言語に合わせる）。ただしブース番号・会社名・商品名・固有名詞は原文の表記のまま記載する
 8. 複数の出展社を挙げる時は、必ず1社1行で改行する（例: "- 社名 ブース番号\n- 社名 ブース番号"）。横並びで列挙しない`;
 
-  // ── GASプロキシ経由でOpenAI呼び出し（APIキーはGAS側スクリプトプロパティに保管）──
   const payload = {
     action: 'ai',
     messages: JSON.stringify([
@@ -189,6 +178,7 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
       ...aiHistory.slice(-6),
     ]),
     gyotai:  visitorGyotai,
+    qr:      visitorQRCode || '',
     session: SESSION_ID,
   };
 
@@ -204,13 +194,10 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
   return data.reply || demoAIResponse(userMsg);
 }
 
-// デモ用応答（API Key未設定時）
 function demoAIResponse(msg) {
   const m = msg.toLowerCase();
-  // 出展社検索を代替
   if (P && P.length > 0) {
     const qNorm = msg.replace(/[　\s]/g,'').toLowerCase();
-    // タグ先頭一致スコアで並び替えて最大5社
     const scored = P.map(p => {
       let score = 0;
       (p.tags||[]).forEach((tag, idx) => {
@@ -253,17 +240,14 @@ function appendAiMsg(role, text, id) {
 
 function appendSearchShortcut(afterEl, userMsg, aiReply) {
   if (!afterEl) return;
-  // セミナー系・挨拶系はスキップ
   if (/セミナー|実演|スケジュール|時間|挨拶|こんにちは|ありがとう|忘れ|トイレ/.test(userMsg)) return;
 
-  // AI回答からブース番号を抽出（A85, B03, C12, D04 など）
   const boothRegex = /([A-D])\s*0*([1-9][0-9]?)(?![0-9])/g;
   const foundBooths = [];
   const seen = new Set();
   if (aiReply) {
     let m;
     while ((m = boothRegex.exec(aiReply)) !== null) {
-      // ゼロパディング正規化: A5 → A05, A85 → A85
       const letter = m[1];
       const num = m[2].padStart(2, '0');
       const id = letter + num;
@@ -274,13 +258,11 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
     }
   }
 
-  // ブース番号がある → 既存のブース一覧画面に飛ぶボタンを設置
   if (foundBooths.length > 0) {
     const matched = foundBooths
       .map(id => P.find(p => (p.booth || '').replace(/\s/g, '').toUpperCase() === id))
       .filter(p => p);
     if (matched.length > 0) {
-      // ボタン押下時に開くため、結果セットをwindowに保持
       const slotKey = '_aiResults_' + Date.now() + '_' + Math.floor(Math.random()*1000);
       window[slotKey] = matched;
 
@@ -298,7 +280,6 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
     }
   }
 
-  // ブース番号がない場合のみ、従来のキーワード抽出ボタンを出す
   const matched = extractTagKeywords(userMsg + ' ' + (aiReply || ''), 2);
   if (matched.length === 0) return;
   const q = matched.join(' ');
@@ -310,38 +291,24 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
   afterEl.closest('.ai-msg').appendChild(btn);
 }
 
-// AI応答の整形
-// - HTMLエスケープ
-// - マークダウンの **strong** を <strong> に変換
-// - 番号付きリストや「・」「-」の前に改行を入れる
-// - 改行を <br> に変換
 function formatAIReply(text) {
   if (!text) return '';
   let t = escapeHtml(text);
-  // 番号付きリスト（1.〜9.）の手前に改行を強制
   t = t.replace(/(?:\s|^)([1-9][0-9]?\.)(?=\s*\*?\*?[^\d])/g, '\n$1');
-  // ハイフン・中点箇条書きの手前に改行
   t = t.replace(/(?:\s)(-\s|・|•\s)/g, '\n$1');
-  // マークダウン **強調**
   t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // 改行 → <br>
   t = t.replace(/\n/g, '<br>');
   return t;
 }
 
-// タグマスタ全体から、ユーザー文に出現する語を長い順に抽出
-// 同じ語幹のものは1つだけ採用、上限limit個
 function extractTagKeywords(text, limit) {
   if (!P || P.length === 0 || !text) return [];
-  // 全タグを集める（重複排除、2文字以上）
   const tagSet = new Set();
   P.forEach(p => (p.tags || []).forEach(t => {
     if (t && t.length >= 2) tagSet.add(t);
   }));
-  // 出展社名も対象に追加
   P.forEach(p => { if (p.company && p.company.length >= 2) tagSet.add(p.company); });
 
-  // 長い語から優先してマッチ（「生クリーム」より「クリーム」が先に当たらないよう）
   const tags = Array.from(tagSet).sort((a, b) => b.length - a.length);
 
   const found = [];
@@ -350,7 +317,6 @@ function extractTagKeywords(text, limit) {
     if (found.length >= limit) break;
     if (remaining.includes(tag)) {
       found.push(tag);
-      // 既に拾った部分は除去して、サブ文字列の重複検出を防ぐ
       remaining = remaining.split(tag).join(' ');
     }
   }
@@ -372,10 +338,8 @@ function appendLeadCard(afterEl) {
 }
 
 function aiRequestContact() {
-  // GASに問い合わせ記録
   const lastQ = aiHistory.filter(h=>h.role==='user').slice(-1)[0]?.content || '';
   sendLog({ keyword: '[問い合わせ希望] ' + lastQ, lang, booth: '', found: 'あり', searchCount: actionLog.aiQueries });
-  // カードを確認メッセージに置換
   const card = document.querySelector('.ai-lead-card');
   if (card) card.innerHTML = '<div style="text-align:center;color:#0F6E56;font-size:13px;padding:4px">✅ 承りました。展示会後に担当よりご連絡いたします。</div>';
 }
@@ -384,4 +348,3 @@ function scrollAiToBottom() {
   const msgs = document.getElementById('aiMsgs');
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
 }
-
