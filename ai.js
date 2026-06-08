@@ -28,7 +28,7 @@ function showAIConcierge() {
     <div class="res-hdr">
       <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">${tr('aiTitle')}</div>
-      </div>
+    </div>
     <div class="ai-msgs" id="aiMsgs">
       <div style="text-align:center;padding:8px 0 4px">${bizBadge}</div>
       <div class="ai-msg bot">
@@ -46,7 +46,9 @@ function showAIConcierge() {
     </div>
   </div>`;
 
-  document.getElementById('aiWelcomeTime').textContent = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  document.getElementById('aiWelcomeTime').textContent =
+    new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+
   setTimeout(() => document.getElementById('aiInp') && document.getElementById('aiInp').focus(), 300);
 }
 
@@ -59,6 +61,7 @@ function aiSendExample(text) {
 function aiSend() {
   const inp = document.getElementById('aiInp');
   if (!inp) return;
+
   const msg = inp.value.trim();
   if (!msg) return;
 
@@ -88,6 +91,7 @@ function sendAIMessage(msg) {
   callOpenAI(msg).then(reply => {
     const loadEl = document.getElementById(loadId);
     if (loadEl) loadEl.innerHTML = formatAIReply(reply);
+
     aiHistory.push({role: 'assistant', content: reply});
     document.getElementById('aiSendBtn').disabled = false;
 
@@ -205,7 +209,6 @@ function findAICompanySuggestion(userMsg) {
   if (qNorm.length < 2 || qCore.length < 2) return null;
 
   // 1. 音声別名の「完全一致」を最優先する
-  // 例：まーす / マース → MARS を優先し、マスターマルティニには寄せない
   const exactAliasCandidates = P.map(p => {
     const aliasTerms = [];
     (p.voiceAliases || []).forEach(alias => {
@@ -222,7 +225,6 @@ function findAICompanySuggestion(userMsg) {
   }
 
   // 2. 入力が短い場合は、部分一致で拾わない
-  // 「まーす」→「ます」になってマスターマルティニへ誤爆するのを防ぐ
   if (qNorm.length <= 3 || qCore.length <= 3) {
     return null;
   }
@@ -262,6 +264,7 @@ function findAICompanySuggestion(userMsg) {
     );
     return boothMatched || companyMatched;
   });
+
   if (alreadyMatched) return null;
 
   const candidates = P.map(p => {
@@ -362,6 +365,7 @@ async function callOpenAI(userMsg) {
       if (!byCat[item.category]) byCat[item.category] = [];
       byCat[item.category].push(item);
     });
+
     const parts = [];
     Object.keys(byCat).forEach(cat => {
       parts.push('■ ' + cat);
@@ -371,6 +375,7 @@ async function callOpenAI(userMsg) {
         parts.push(line);
       });
     });
+
     aiDocContext = parts.join('\n');
   }
 
@@ -380,6 +385,7 @@ async function callOpenAI(userMsg) {
 
 【来場者情報】
 業態: ${visitorGyotai || '不明'}
+利用区分: ${userType || '不明'}
 ${gyotaiCtx}
 
 【会場の出展社（抜粋）】
@@ -417,6 +423,7 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
     gyotai:  visitorGyotai,
     qr:      visitorQRCode || '',
     session: SESSION_ID,
+    userType: userType || '',
   };
 
   const res = await fetch(GAS_URL, {
@@ -426,13 +433,16 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
   });
 
   if (!res.ok) throw new Error('GAS proxy error: ' + res.status);
+
   const data = await res.json();
   if (data.error) throw new Error(data.error);
+
   return data.reply || demoAIResponse(userMsg);
 }
 
 function demoAIResponse(msg) {
   const m = msg.toLowerCase();
+
   if (P && P.length > 0) {
     const qNorm = normalizeAIText(msg);
 
@@ -447,27 +457,36 @@ function demoAIResponse(msg) {
       return `「${msg}」に関連する出展社をご案内します:\n${list}\n\n詳細はブース番号でMAPをご確認ください。`;
     }
   }
+
   if (/セミナー|実演/.test(m)) {
     const s = SEMINARS[0];
-    return s ? `セミナーは${s.date} ${s.time}〜「${s.title}」（${s.venue}・${s.reservation}）などがございます。セミナータブで全スケジュールをご確認ください。` : 'セミナー情報はセミナー・実演タブをご確認ください。';
+    return s
+      ? `セミナーは${s.date} ${s.time}〜「${s.title}」（${s.venue}・${s.reservation}）などがございます。セミナータブで全スケジュールをご確認ください。`
+      : 'セミナー情報はセミナー・実演タブをご確認ください。';
   }
+
   if (/忘れ|落とした|なくし/.test(m)) {
     return '忘れ物・遺失物は会場中央の**総合案内**までお申し出ください。スタッフが対応いたします。';
   }
+
   if (/トイレ|wc|お手洗い/.test(m)) {
     return 'お手洗いは会場の四隅（東西の出入口付近）にございます。会場MAPでご確認いただけます。';
   }
+
   return `「${msg}」についてお調べします。現在AIキーが未設定のためデモモードで動作しています。「ブースを探す」から検索もご利用ください。`;
 }
 
 function appendAiMsg(role, text, id) {
   const msgs = document.getElementById('aiMsgs');
   if (!msgs) return;
+
   const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
   const div = document.createElement('div');
   div.className = `ai-msg ${role}`;
+
   const bubbleClass = text === '...' ? 'ai-bubble loading' : 'ai-bubble';
   div.innerHTML = `<div class="${bubbleClass}"${id ? ' id="'+id+'"' : ''}>${escapeHtml(text).replace(/\n/g,'<br>')}</div><div class="ai-time">${now}</div>`;
+
   msgs.appendChild(div);
   scrollAiToBottom();
 }
@@ -479,6 +498,7 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
   const boothRegex = /([A-D])\s*0*([1-9][0-9]?)(?![0-9])/g;
   const foundBooths = [];
   const seen = new Set();
+
   if (aiReply) {
     let m;
     while ((m = boothRegex.exec(aiReply)) !== null) {
@@ -496,6 +516,7 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
     const matched = foundBooths
       .map(id => P.find(p => (p.booth || '').replace(/\s/g, '').toUpperCase() === id))
       .filter(p => p);
+
     if (matched.length > 0) {
       const slotKey = '_aiResults_' + Date.now() + '_' + Math.floor(Math.random()*1000);
       window[slotKey] = matched;
@@ -505,10 +526,12 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
       btn.innerHTML =
         '<span style="display:flex;align-items:center;gap:8px"><i class="ti ti-sparkles" style="font-size:16px"></i>' + tr('aiBoothsBtn', matched.length) + '</span>'
         + '<i class="ti ti-chevron-right" style="font-size:16px"></i>';
+
       btn.onclick = function() {
         const results = window[slotKey] || [];
         showResults(results, tr('aiBoothsLabel'));
       };
+
       afterEl.closest('.ai-msg').appendChild(btn);
       return;
     }
@@ -516,49 +539,64 @@ function appendSearchShortcut(afterEl, userMsg, aiReply) {
 
   const matched = extractTagKeywords(userMsg + ' ' + (aiReply || ''), 2);
   if (matched.length === 0) return;
-  const q = matched.join(' ');
 
+  const q = matched.join(' ');
   const btn = document.createElement('button');
   btn.style.cssText = 'margin-top:8px;background:#E1F5EE;border:1px solid #0F6E56;color:#0F6E56;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent';
   btn.innerHTML = '<i class="ti ti-search" style="font-size:13px"></i> ' + tr('aiListBtn', escapeHtml(q));
-  btn.onclick = function() { search(q, q); };
+
+  btn.onclick = function() {
+    search(q, q);
+  };
+
   afterEl.closest('.ai-msg').appendChild(btn);
 }
 
 function formatAIReply(text) {
   if (!text) return '';
+
   let t = escapeHtml(text);
   t = t.replace(/(?:\s|^)([1-9][0-9]?\.)(?=\s*\*?\*?[^\d])/g, '\n$1');
   t = t.replace(/(?:\s)(-\s|・|•\s)/g, '\n$1');
   t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   t = t.replace(/\n/g, '<br>');
+
   return t;
 }
 
 function extractTagKeywords(text, limit) {
   if (!P || P.length === 0 || !text) return [];
+
   const tagSet = new Set();
+
   P.forEach(p => (p.tags || []).forEach(t => {
     if (t && t.length >= 2) tagSet.add(t);
   }));
-  P.forEach(p => { if (p.company && p.company.length >= 2) tagSet.add(p.company); });
+
+  P.forEach(p => {
+    if (p.company && p.company.length >= 2) tagSet.add(p.company);
+  });
 
   const tags = Array.from(tagSet).sort((a, b) => b.length - a.length);
 
   const found = [];
   let remaining = text;
+
   for (const tag of tags) {
     if (found.length >= limit) break;
+
     if (remaining.includes(tag)) {
       found.push(tag);
       remaining = remaining.split(tag).join(' ');
     }
   }
+
   return found;
 }
 
 function appendLeadCard(afterEl) {
   if (!afterEl) return;
+
   const card = document.createElement('div');
   card.className = 'ai-lead-card';
   card.innerHTML = `<div class="ai-lead-ttl">💼 丸菱営業担当へのご連絡</div>
@@ -567,15 +605,27 @@ function appendLeadCard(afterEl) {
       <button class="ai-lead-btn ai-lead-yes" onclick="aiRequestContact()">連絡を希望する</button>
       <button class="ai-lead-btn ai-lead-no" onclick="this.closest('.ai-lead-card').remove()">いいえ</button>
     </div>`;
+
   afterEl.closest('.ai-msg').after(card);
   scrollAiToBottom();
 }
 
 function aiRequestContact() {
-  const lastQ = aiHistory.filter(h=>h.role==='user').slice(-1)[0]?.content || '';
-  sendLog({ keyword: '[問い合わせ希望] ' + lastQ, lang, booth: '', found: 'あり', searchCount: actionLog.aiQueries });
+  const lastQ = aiHistory.filter(h => h.role === 'user').slice(-1)[0]?.content || '';
+
+  sendLog({
+    keyword: '[問い合わせ希望] ' + lastQ,
+    lang,
+    booth: '',
+    found: 'あり',
+    searchCount: actionLog.aiQueries,
+    userType: userType
+  });
+
   const card = document.querySelector('.ai-lead-card');
-  if (card) card.innerHTML = '<div style="text-align:center;color:#0F6E56;font-size:13px;padding:4px">✅ 承りました。展示会後に担当よりご連絡いたします。</div>';
+  if (card) {
+    card.innerHTML = '<div style="text-align:center;color:#0F6E56;font-size:13px;padding:4px">✅ 承りました。展示会後に担当よりご連絡いたします。</div>';
+  }
 }
 
 function scrollAiToBottom() {
