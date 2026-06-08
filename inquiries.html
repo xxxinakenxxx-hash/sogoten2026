@@ -12,6 +12,10 @@
       --text:#1a1a18;
       --muted:#73726c;
       --blue:#185FA5;
+      --brown:#854F0B;
+      --brownBg:#FAEEDA;
+      --red:#C44A2D;
+      --orange:#C8842F;
     }
     * { box-sizing:border-box; }
     body {
@@ -44,7 +48,7 @@
     }
     main {
       padding:18px 22px 40px;
-      max-width:1500px;
+      max-width:1600px;
       margin:0 auto;
     }
     .toolbar {
@@ -53,7 +57,7 @@
       border-radius:14px;
       padding:14px;
       display:grid;
-      grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr auto auto;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr auto auto;
       gap:10px;
       align-items:end;
       margin-bottom:14px;
@@ -65,13 +69,19 @@
       margin-bottom:5px;
       font-weight:700;
     }
-    input, select {
+    input, select, textarea {
       width:100%;
       border:1px solid var(--line);
       border-radius:10px;
       padding:10px 11px;
       font-size:14px;
       background:#fff;
+      font-family:inherit;
+    }
+    textarea {
+      resize:vertical;
+      min-height:68px;
+      line-height:1.5;
     }
     button {
       border:none;
@@ -81,6 +91,7 @@
       font-weight:700;
       cursor:pointer;
       white-space:nowrap;
+      font-family:inherit;
     }
     .btn-main {
       background:var(--green);
@@ -125,7 +136,7 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0;
-      min-width:1300px;
+      min-width:1500px;
       font-size:13px;
     }
     th, td {
@@ -150,8 +161,8 @@
     }
     .booth {
       font-weight:800;
-      color:#854F0B;
-      background:#FAEEDA;
+      color:var(--brown);
+      background:var(--brownBg);
       border-radius:6px;
       padding:3px 7px;
       display:inline-block;
@@ -173,10 +184,59 @@
       color:#555;
       font-size:12px;
       font-weight:700;
+      white-space:nowrap;
     }
     .pill-visitor { background:#e6f5ee; color:#0F6E56; }
     .pill-staff { background:#e6f0fb; color:#185FA5; }
     .pill-exhibitor { background:#f7eee1; color:#8A5A13; }
+
+    .status-pill {
+      display:inline-block;
+      border-radius:99px;
+      padding:4px 9px;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    .status-未対応 { background:#FCEBE6; color:#C44A2D; }
+    .status-対応中 { background:#E6F0FB; color:#185FA5; }
+    .status-対応済み { background:#E6F5EE; color:#0F6E56; }
+    .status-保留 { background:#FFF4D8; color:#8A5A13; }
+
+    .status-box {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:170px;
+    }
+    .status-row {
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .status-select {
+      padding:7px 8px;
+      font-size:12px;
+      border-radius:8px;
+    }
+    .status-memo {
+      font-size:12px;
+      padding:7px 8px;
+      min-height:44px;
+      border-radius:8px;
+    }
+    .status-save {
+      background:var(--green);
+      color:#fff;
+      padding:7px 9px;
+      font-size:12px;
+      border-radius:8px;
+    }
+    .status-updated {
+      font-size:11px;
+      color:var(--muted);
+      line-height:1.3;
+    }
     .empty {
       background:#fff;
       border:1px solid var(--line);
@@ -185,11 +245,114 @@
       text-align:center;
       color:var(--muted);
     }
+    .cards-wrap {
+      display:none;
+    }
+    .inq-card {
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      margin-bottom:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,.03);
+    }
+    .card-head {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .card-title {
+      font-size:15px;
+      font-weight:800;
+      line-height:1.45;
+    }
+    .card-date {
+      font-size:11px;
+      color:var(--muted);
+      white-space:nowrap;
+      margin-top:2px;
+    }
+    .card-section {
+      border-top:1px solid #ecebe6;
+      padding-top:10px;
+      margin-top:10px;
+    }
+    .card-label {
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+    .card-inquiry {
+      font-size:14px;
+      line-height:1.65;
+      white-space:pre-wrap;
+      color:#1a1a18;
+    }
+    .card-grid {
+      display:grid;
+      grid-template-columns: 72px 1fr;
+      gap:6px 10px;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .card-k {
+      color:var(--muted);
+      font-weight:700;
+    }
+    .card-v {
+      color:#1a1a18;
+      word-break:break-word;
+    }
+    .tel-link {
+      color:#0F6E56;
+      font-weight:800;
+      text-decoration:none;
+    }
+
     @media (max-width: 980px) {
-      header { align-items:flex-start; flex-direction:column; }
-      .toolbar { grid-template-columns:1fr; }
-      main { padding:14px; }
-      .table-wrap { max-height:none; }
+      header {
+        align-items:flex-start;
+        flex-direction:column;
+        padding:14px;
+      }
+      main {
+        padding:12px;
+      }
+      .toolbar {
+        grid-template-columns:1fr;
+        padding:12px;
+        gap:9px;
+      }
+      .stats {
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+      }
+      .stat {
+        min-width:0;
+        padding:9px 11px;
+      }
+      .stat-num {
+        font-size:20px;
+      }
+      .table-wrap {
+        display:none;
+      }
+      .cards-wrap {
+        display:block;
+      }
+      button {
+        width:100%;
+      }
+      .card-head {
+        flex-direction:column;
+      }
+      .card-date {
+        white-space:normal;
+      }
     }
   </style>
 </head>
@@ -209,6 +372,10 @@
       <div>
         <label>キーワード検索</label>
         <input id="keywordInput" type="search" placeholder="会社名・氏名・メーカー・問い合わせ内容">
+      </div>
+      <div>
+        <label>対応状況</label>
+        <select id="statusFilter"></select>
       </div>
       <div>
         <label>拠点別</label>
@@ -240,24 +407,30 @@
         <div class="stat-lbl">総件数</div>
       </div>
       <div class="stat">
-        <div class="stat-num" id="officeCount">0</div>
-        <div class="stat-lbl">拠点数</div>
+        <div class="stat-num" id="notDoneCount">0</div>
+        <div class="stat-lbl">未対応</div>
       </div>
       <div class="stat">
-        <div class="stat-num" id="personCount">0</div>
-        <div class="stat-lbl">担当者数</div>
+        <div class="stat-num" id="doingCount">0</div>
+        <div class="stat-lbl">対応中</div>
       </div>
       <div class="stat">
-        <div class="stat-num" id="makerCount">0</div>
-        <div class="stat-lbl">メーカー数</div>
+        <div class="stat-num" id="doneCount">0</div>
+        <div class="stat-lbl">対応済み</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="holdCount">0</div>
+        <div class="stat-lbl">保留</div>
       </div>
     </div>
 
     <div id="tableArea" class="table-wrap"></div>
+    <div id="cardsArea" class="cards-wrap"></div>
   </main>
 
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
+    const STATUS_OPTIONS = ['未対応', '対応中', '対応済み', '保留'];
 
     let allItems = [];
     let filteredItems = [];
@@ -266,6 +439,7 @@
 
     window.addEventListener('load', () => {
       document.getElementById('keywordInput').addEventListener('input', applyFilters);
+      document.getElementById('statusFilter').addEventListener('change', applyFilters);
       document.getElementById('officeFilter').addEventListener('change', applyFilters);
       document.getElementById('personFilter').addEventListener('change', applyFilters);
       document.getElementById('makerFilter').addEventListener('change', applyFilters);
@@ -276,12 +450,19 @@
     async function loadInquiries() {
       document.getElementById('updatedText').textContent = '読み込み中...';
       document.getElementById('tableArea').innerHTML = '<div class="empty">読み込み中...</div>';
+      document.getElementById('cardsArea').innerHTML = '<div class="empty">読み込み中...</div>';
 
       try {
         const res = await fetch(GAS_URL + '?action=inquiries&ts=' + Date.now());
         const data = await res.json();
 
         allItems = Array.isArray(data.items) ? data.items : [];
+        allItems.forEach(item => {
+          item.status = item.status || '未対応';
+          item.statusMemo = item.statusMemo || '';
+          item.statusUpdated = item.statusUpdated || '';
+        });
+
         document.getElementById('updatedText').textContent =
           '最終取得：' + (data.updated || '-') + ' / ' + allItems.length + '件';
 
@@ -289,8 +470,9 @@
         applyFilters();
       } catch (e) {
         document.getElementById('updatedText').textContent = '取得失敗';
-        document.getElementById('tableArea').innerHTML =
-          '<div class="empty">問い合わせ一覧を取得できませんでした。GASデプロイと権限を確認してください。</div>';
+        const msg = '<div class="empty">問い合わせ一覧を取得できませんでした。GASデプロイと権限を確認してください。</div>';
+        document.getElementById('tableArea').innerHTML = msg;
+        document.getElementById('cardsArea').innerHTML = msg;
       }
     }
 
@@ -300,6 +482,7 @@
       const makers = uniqueSorted(allItems.map(x => x.exhibitor || 'メーカー未入力'));
       const userTypes = uniqueSorted(allItems.map(x => x.userType || '未設定'));
 
+      setOptions('statusFilter', STATUS_OPTIONS, 'すべて');
       setOptions('officeFilter', offices, 'すべて');
       setOptions('personFilter', persons, 'すべて');
       setOptions('makerFilter', makers, 'すべて');
@@ -321,17 +504,20 @@
 
     function applyFilters() {
       const kw = normalize(document.getElementById('keywordInput').value);
+      const status = document.getElementById('statusFilter').value;
       const office = document.getElementById('officeFilter').value;
       const person = document.getElementById('personFilter').value;
       const maker = document.getElementById('makerFilter').value;
       const userType = document.getElementById('userTypeFilter').value;
 
       filteredItems = allItems.filter(item => {
+        const itemStatus = item.status || '未対応';
         const itemOffice = item.salesOffice || '拠点未補完';
         const itemPerson = item.salesPerson || '担当未補完';
         const itemMaker = item.exhibitor || 'メーカー未入力';
         const itemUserType = item.userType || '未設定';
 
+        if (status && itemStatus !== status) return false;
         if (office && itemOffice !== office) return false;
         if (person && itemPerson !== person) return false;
         if (maker && itemMaker !== maker) return false;
@@ -351,7 +537,9 @@
             item.regtype,
             item.userType,
             item.salesOffice,
-            item.salesPerson
+            item.salesPerson,
+            item.status,
+            item.statusMemo
           ].join(' '));
 
           if (!haystack.includes(kw)) return false;
@@ -362,6 +550,7 @@
 
       sortItems();
       renderTable();
+      renderCards();
       renderStats();
     }
 
@@ -394,12 +583,10 @@
     function renderStats() {
       document.getElementById('shownCount').textContent = filteredItems.length;
       document.getElementById('totalCount').textContent = allItems.length;
-      document.getElementById('officeCount').textContent =
-        uniqueSorted(allItems.map(x => x.salesOffice || '拠点未補完')).length;
-      document.getElementById('personCount').textContent =
-        uniqueSorted(allItems.map(x => x.salesPerson || '担当未補完')).length;
-      document.getElementById('makerCount').textContent =
-        uniqueSorted(allItems.map(x => x.exhibitor || 'メーカー未入力')).length;
+      document.getElementById('notDoneCount').textContent = allItems.filter(x => (x.status || '未対応') === '未対応').length;
+      document.getElementById('doingCount').textContent = allItems.filter(x => x.status === '対応中').length;
+      document.getElementById('doneCount').textContent = allItems.filter(x => x.status === '対応済み').length;
+      document.getElementById('holdCount').textContent = allItems.filter(x => x.status === '保留').length;
     }
 
     function renderTable() {
@@ -412,6 +599,7 @@
       const rows = filteredItems.map(item => {
         return `
           <tr>
+            <td>${renderStatusEditor(item)}</td>
             <td>${esc(item.date)}</td>
             <td>${item.booth ? '<span class="booth">'+esc(item.booth)+'</span>' : ''}</td>
             <td><strong>${esc(item.exhibitor)}</strong></td>
@@ -435,6 +623,7 @@
         <table>
           <thead>
             <tr>
+              <th onclick="setSort('status')">対応状況${sortMark('status')}</th>
               <th onclick="setSort('date')">日時${sortMark('date')}</th>
               <th onclick="setSort('booth')">ブース${sortMark('booth')}</th>
               <th onclick="setSort('exhibitor')">メーカー${sortMark('exhibitor')}</th>
@@ -453,6 +642,142 @@
         </table>`;
     }
 
+    function renderCards() {
+      if (filteredItems.length === 0) {
+        document.getElementById('cardsArea').innerHTML =
+          '<div class="empty">該当する問い合わせはありません。</div>';
+        return;
+      }
+
+      const html = filteredItems.map(item => {
+        const tel = item.visitorTel || '';
+        const telHtml = tel
+          ? '<a class="tel-link" href="tel:' + escAttr(tel) + '">' + esc(tel) + '</a>'
+          : '';
+
+        return `
+          <div class="inq-card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">
+                  ${item.booth ? '<span class="booth">'+esc(item.booth)+'</span> ' : ''}
+                  ${esc(item.exhibitor || 'メーカー未入力')}
+                </div>
+                <div class="muted">${esc(item.regtype || '')} ${renderUserType(item.userType)}</div>
+              </div>
+              <div class="card-date">${esc(item.date)}</div>
+            </div>
+
+            <div class="card-section">
+              <div class="card-label">対応状況</div>
+              ${renderStatusEditor(item)}
+            </div>
+
+            <div class="card-section">
+              <div class="card-label">問い合わせ内容</div>
+              <div class="card-inquiry">${esc(item.inquiry)}</div>
+            </div>
+
+            <div class="card-section">
+              <div class="card-label">来場者</div>
+              <div class="card-grid">
+                <div class="card-k">会社</div>
+                <div class="card-v">${esc(item.visitorCompany)}</div>
+                <div class="card-k">氏名</div>
+                <div class="card-v">${esc(item.visitorName)}</div>
+                <div class="card-k">部署</div>
+                <div class="card-v">${esc(item.visitorDept)}</div>
+                <div class="card-k">電話</div>
+                <div class="card-v">${telHtml}</div>
+                <div class="card-k">業態</div>
+                <div class="card-v">${esc(item.gyotai)}</div>
+              </div>
+            </div>
+
+            <div class="card-section">
+              <div class="card-label">営業情報</div>
+              <div class="card-grid">
+                <div class="card-k">拠点</div>
+                <div class="card-v">${esc(item.salesOffice || '拠点未補完')}</div>
+                <div class="card-k">担当</div>
+                <div class="card-v">${esc(item.salesPerson || '担当未補完')}</div>
+                <div class="card-k">QR</div>
+                <div class="card-v">${esc(item.qr)}</div>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('cardsArea').innerHTML = html;
+    }
+
+    function renderStatusEditor(item) {
+      const rowNumber = item.rowNumber;
+      const status = item.status || '未対応';
+      const memo = item.statusMemo || '';
+      const updated = item.statusUpdated || '';
+
+      const opts = STATUS_OPTIONS.map(s =>
+        '<option value="' + escAttr(s) + '"' + (s === status ? ' selected' : '') + '>' + esc(s) + '</option>'
+      ).join('');
+
+      return `
+        <div class="status-box" data-row="${escAttr(rowNumber)}">
+          <span class="status-pill status-${escAttr(status)}">${esc(status)}</span>
+          <select class="status-select" id="status_${rowNumber}">
+            ${opts}
+          </select>
+          <textarea class="status-memo" id="memo_${rowNumber}" placeholder="対応メモ">${esc(memo)}</textarea>
+          <button class="status-save" id="save_${rowNumber}" onclick="saveStatus(${rowNumber})">保存</button>
+          ${updated ? '<div class="status-updated">更新: ' + esc(updated) + '</div>' : ''}
+        </div>`;
+    }
+
+    async function saveStatus(rowNumber) {
+      const statusEl = document.getElementById('status_' + rowNumber);
+      const memoEl = document.getElementById('memo_' + rowNumber);
+      const btn = document.getElementById('save_' + rowNumber);
+
+      if (!statusEl || !memoEl || !btn) return;
+
+      const status = statusEl.value;
+      const memo = memoEl.value || '';
+
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+
+      try {
+        const body = new URLSearchParams();
+        body.append('action', 'updateInquiryStatus');
+        body.append('rowNumber', rowNumber);
+        body.append('status', status);
+        body.append('memo', memo);
+
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body.toString()
+        });
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const item = allItems.find(x => String(x.rowNumber) === String(rowNumber));
+        if (item) {
+          item.status = status;
+          item.statusMemo = memo;
+          item.statusUpdated = '更新済み';
+        }
+
+        btn.textContent = '保存済み';
+        setTimeout(() => applyFilters(), 500);
+      } catch(e) {
+        alert('保存に失敗しました: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '保存';
+      }
+    }
+
     function renderUserType(type) {
       const t = type || '未設定';
       let cls = 'pill';
@@ -466,6 +791,9 @@
 
     function downloadCSV() {
       const headers = [
+        '対応状況',
+        '対応メモ',
+        '対応日時',
         '日時',
         'ブース',
         'メーカー',
@@ -486,6 +814,9 @@
 
       filteredItems.forEach(item => {
         lines.push([
+          item.status || '未対応',
+          item.statusMemo || '',
+          item.statusUpdated || '',
           item.date,
           item.booth,
           item.exhibitor,
@@ -530,6 +861,8 @@
 
       filteredItems.forEach((item, idx) => {
         text += '[' + (idx + 1) + '] ' + (item.booth || '') + ' ' + (item.exhibitor || '') + '\n';
+        text += '対応状況：' + (item.status || '未対応') + '\n';
+        if (item.statusMemo) text += '対応メモ：' + item.statusMemo + '\n';
         text += '日時：' + (item.date || '') + '\n';
         text += '来場者：' + (item.visitorCompany || '') + ' ' + (item.visitorName || '') + '\n';
         text += '電話：' + (item.visitorTel || '') + '\n';
