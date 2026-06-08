@@ -720,11 +720,15 @@ function setTTSButtonState(btnId, playing) {
   if (!btn) return;
 
   if (playing) {
-    btn.style.background = '#C44A2D';
-    btn.innerHTML = '<span style="font-size:20px;line-height:1">⏹</span><span>停止</span>';
+    btn.style.background = '#FCEBE6';
+    btn.style.color = '#C44A2D';
+    btn.style.border = '1px solid #C44A2D';
+    btn.innerHTML = '<span style="font-size:14px;line-height:1">⏹</span><span>停止</span>';
   } else {
-    btn.style.background = '#0F6E56';
-    btn.innerHTML = '<span style="font-size:20px;line-height:1">🔊</span><span>読み上げ</span>';
+    btn.style.background = '#E1F5EE';
+    btn.style.color = '#0F6E56';
+    btn.style.border = '1px solid #0F6E56';
+    btn.innerHTML = '<span style="font-size:14px;line-height:1">🔊</span><span>読む</span>';
   }
 }
 
