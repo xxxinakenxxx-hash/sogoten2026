@@ -204,6 +204,30 @@ function findAICompanySuggestion(userMsg) {
   const qCore = normalizeAICompanyCore(userMsg);
   if (qNorm.length < 2 || qCore.length < 2) return null;
 
+  // 1. 音声別名の「完全一致」を最優先する
+  // 例：まーす / マース → MARS を優先し、マスターマルティニには寄せない
+  const exactAliasCandidates = P.map(p => {
+    const aliasTerms = [];
+    (p.voiceAliases || []).forEach(alias => {
+      extractAITerms(alias).forEach(t => aliasTerms.push(t));
+    });
+
+    const matched = aliasTerms.some(t => t && t === qNorm);
+    return matched ? { p, score: 1000 } : null;
+  })
+  .filter(Boolean);
+
+  if (exactAliasCandidates.length === 1) {
+    return exactAliasCandidates[0].p;
+  }
+
+  // 2. 入力が短い場合は、部分一致で拾わない
+  // 「まーす」→「ます」になってマスターマルティニへ誤爆するのを防ぐ
+  if (qNorm.length <= 3 || qCore.length <= 3) {
+    return null;
+  }
+
+  // 3. 音声別名の部分一致
   const aliasCandidates = P.map(p => {
     const aliasTerms = [];
     (p.voiceAliases || []).forEach(alias => {
@@ -212,10 +236,9 @@ function findAICompanySuggestion(userMsg) {
 
     let score = 0;
     aliasTerms.forEach((t, idx) => {
-      if (!t || t.length < 2) return;
-      if (t === qNorm) score += 1000 - idx;
-      else if (qNorm.includes(t)) score += 900 - idx;
-      else if (t.includes(qNorm)) score += 700 - idx;
+      if (!t || t.length < 4) return;
+      if (qNorm.includes(t)) score += 900 - idx;
+      else if (t.includes(qNorm) && qNorm.length >= 4) score += 700 - idx;
     });
 
     return { p, score };
@@ -252,8 +275,8 @@ function findAICompanySuggestion(userMsg) {
     let score = 0;
 
     if (qCore.includes(companyCore)) score += 120 + companyCore.length;
-    else if (companyCore.includes(qCore) && qCore.length >= 2) score += 90 + qCore.length;
-    else if (qCore.slice(0, 2) === companyCore.slice(0, 2)) score += 70;
+    else if (companyCore.includes(qCore) && qCore.length >= 4) score += 90 + qCore.length;
+    else if (qCore.length >= 4 && qCore.slice(0, 3) === companyCore.slice(0, 3)) score += 70;
 
     if (score <= 0) return null;
     return { p, score, company, booth };
