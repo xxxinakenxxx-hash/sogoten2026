@@ -6,6 +6,7 @@ let qrScanner = null;
 function showQRScreen() {
   _currentView = showQRScreen;
   stopQRCamera();
+
   document.getElementById('screen').innerHTML = `
   <div class="screen">
     <div class="qr-wrap">
@@ -32,6 +33,7 @@ function startQRCamera() {
   const video = document.createElement('video');
   video.setAttribute('playsinline', true);
   video.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:14px';
+
   const reader = document.getElementById('qrReader');
   if (!reader) return;
   reader.appendChild(video);
@@ -48,16 +50,24 @@ function startQRCamera() {
       requestAnimationFrame(scanFrame);
     })
     .catch(() => {
-      if (reader) reader.innerHTML = '<div style="color:#888780;font-size:13px;padding:20px;text-align:center">' + tr('qrCamUnavailable') + '</div>';
+      if (reader) {
+        reader.innerHTML =
+          '<div style="color:#888780;font-size:13px;padding:20px;text-align:center">' +
+          tr('qrCamUnavailable') +
+          '</div>';
+      }
     });
 
   function scanFrame() {
     if (!scanning || !document.getElementById('qrReader')) return;
+
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0);
+
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
       // jsQRが利用可能なら使用
       if (typeof jsQR !== 'undefined') {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
@@ -69,6 +79,7 @@ function startQRCamera() {
         }
       }
     }
+
     requestAnimationFrame(scanFrame);
   }
 }
@@ -82,26 +93,40 @@ function stopQRCamera() {
 
 function skipQR() {
   stopQRCamera();
+
   visitorGyotai = '';
-  visitorQRCode = 'SKIP';
+  visitorQRCode = '';
+  userType = '';
   saveVisitor();
-  showHome();
+
+  showUserTypeScreen();
 }
 
 function processQRCode(code) {
   const normalized = code.trim().toLowerCase();
+
   // kd69-xxxxxxx 形式チェック
   const gyotai = GYOTAI_MAP[normalized] || null;
 
   stopQRCamera();
-  visitorQRCode  = normalized;
-  visitorGyotai  = gyotai || '';
+
+  visitorQRCode = normalized;
+  visitorGyotai = gyotai || '';
+  userType = 'visitor';
   saveVisitor();
 
   // ログ送信
   const consent = localStorage.getItem(CONSENT_KEY);
   if (consent === '1') {
-    sendLog({ keyword: '[QR入場]', lang: lang, booth: normalized, found: gyotai ? 'あり' : 'なし', searchCount: 0 });
+    sendLog({
+      keyword: '[QR入場]',
+      lang: lang,
+      booth: normalized,
+      found: gyotai ? 'あり' : 'なし',
+      searchCount: 0,
+      userType: userType
+    });
+
     // 入退場ログにも記録
     recordEntryExit('入場');
   }
@@ -113,6 +138,7 @@ function processQRCode(code) {
 function showGyotaiConfirm(gyotai, qr) {
   _currentView = () => showGyotaiConfirm(gyotai, qr);
   const gyotaiDisplay = gyotai || '未判定（スキップしてください）';
+
   document.getElementById('screen').innerHTML = `
   <div class="screen" style="padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
     <div style="font-size:56px">✅</div>
