@@ -650,9 +650,9 @@ function appendTTSButton(afterEl, text) {
   btn.id = btnId;
   btn.type = 'button';
   btn.style.cssText =
-    'margin-top:10px;width:100%;background:#0F6E56;color:#fff;border:none;border-radius:14px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(15,110,86,.18)';
+    'margin-top:8px;background:#E1F5EE;color:#0F6E56;border:1px solid #0F6E56;border-radius:18px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;';
 
-  btn.innerHTML = '<span style="font-size:20px;line-height:1">🔊</span><span>読み上げ</span>';
+  btn.innerHTML = '<span style="font-size:14px;line-height:1">🔊</span><span>読む</span>';
   btn.onclick = function() {
     toggleAITTS(text, btnId);
   };
