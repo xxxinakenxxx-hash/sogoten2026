@@ -26,7 +26,7 @@ function showAIConcierge() {
   document.getElementById('screen').innerHTML = `
   <div class="screen ai-wrap" style="height:calc(100vh - 56px);height:calc(100dvh - 56px)">
     <div class="res-hdr">
-      <button class="back-btn" onclick="showHome()"><i class="ti ti-arrow-left"></i></button>
+      <button class="back-btn" onclick="stopAITTS();showHome()"><i class="ti ti-arrow-left"></i></button>
       <div class="res-q">${tr('aiTitle')}</div>
     </div>
     <div class="ai-msgs" id="aiMsgs">
@@ -90,7 +90,11 @@ function sendAIMessage(msg) {
 
   callOpenAI(msg).then(reply => {
     const loadEl = document.getElementById(loadId);
-    if (loadEl) loadEl.innerHTML = formatAIReply(reply);
+
+    if (loadEl) {
+      loadEl.innerHTML = formatAIReply(reply);
+      appendTTSButton(loadEl, reply);
+    }
 
     aiHistory.push({role: 'assistant', content: reply});
     document.getElementById('aiSendBtn').disabled = false;
@@ -208,7 +212,6 @@ function findAICompanySuggestion(userMsg) {
   const qCore = normalizeAICompanyCore(userMsg);
   if (qNorm.length < 2 || qCore.length < 2) return null;
 
-  // 1. 音声別名の「完全一致」を最優先する
   const exactAliasCandidates = P.map(p => {
     const aliasTerms = [];
     (p.voiceAliases || []).forEach(alias => {
@@ -224,12 +227,10 @@ function findAICompanySuggestion(userMsg) {
     return exactAliasCandidates[0].p;
   }
 
-  // 2. 入力が短い場合は、部分一致で拾わない
   if (qNorm.length <= 3 || qCore.length <= 3) {
     return null;
   }
 
-  // 3. 音声別名の部分一致
   const aliasCandidates = P.map(p => {
     const aliasTerms = [];
     (p.voiceAliases || []).forEach(alias => {
@@ -631,4 +632,122 @@ function aiRequestContact() {
 function scrollAiToBottom() {
   const msgs = document.getElementById('aiMsgs');
   if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ============================================================
+// TTS 読み上げ
+// ============================================================
+let currentTTSButtonId = '';
+let currentTTSUtterance = null;
+
+function appendTTSButton(afterEl, text) {
+  if (!afterEl || !text) return;
+  if (!('speechSynthesis' in window)) return;
+
+  const btnId = 'ttsBtn_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+
+  const btn = document.createElement('button');
+  btn.id = btnId;
+  btn.type = 'button';
+  btn.style.cssText =
+    'margin-top:10px;width:100%;background:#0F6E56;color:#fff;border:none;border-radius:14px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(15,110,86,.18)';
+
+  btn.innerHTML = '<span style="font-size:20px;line-height:1">🔊</span><span>読み上げ</span>';
+  btn.onclick = function() {
+    toggleAITTS(text, btnId);
+  };
+
+  const msg = afterEl.closest('.ai-msg');
+  if (msg) msg.appendChild(btn);
+}
+
+function toggleAITTS(text, btnId) {
+  if (!('speechSynthesis' in window)) {
+    alert('この端末では読み上げに対応していません');
+    return;
+  }
+
+  if (speechSynthesis.speaking && currentTTSButtonId === btnId) {
+    stopAITTS();
+    return;
+  }
+
+  stopAITTS();
+
+  const cleanText = cleanTextForTTS(text);
+  if (!cleanText) return;
+
+  const utter = new SpeechSynthesisUtterance(cleanText);
+  utter.lang = getTTSLang();
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+
+  currentTTSButtonId = btnId;
+  currentTTSUtterance = utter;
+  setTTSButtonState(btnId, true);
+
+  utter.onend = function() {
+    setTTSButtonState(btnId, false);
+    currentTTSButtonId = '';
+    currentTTSUtterance = null;
+  };
+
+  utter.onerror = function() {
+    setTTSButtonState(btnId, false);
+    currentTTSButtonId = '';
+    currentTTSUtterance = null;
+  };
+
+  speechSynthesis.speak(utter);
+}
+
+function stopAITTS() {
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+  }
+
+  if (currentTTSButtonId) {
+    setTTSButtonState(currentTTSButtonId, false);
+  }
+
+  currentTTSButtonId = '';
+  currentTTSUtterance = null;
+}
+
+function setTTSButtonState(btnId, playing) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+
+  if (playing) {
+    btn.style.background = '#C44A2D';
+    btn.innerHTML = '<span style="font-size:20px;line-height:1">⏹</span><span>停止</span>';
+  } else {
+    btn.style.background = '#0F6E56';
+    btn.innerHTML = '<span style="font-size:20px;line-height:1">🔊</span><span>読み上げ</span>';
+  }
+}
+
+function getTTSLang() {
+  const map = {
+    ja: 'ja-JP',
+    en: 'en-US',
+    zh: 'zh-CN',
+    ko: 'ko-KR'
+  };
+
+  return map[lang] || 'ja-JP';
+}
+
+function cleanTextForTTS(text) {
+  return String(text || '')
+    .replace(/\*\*/g, '')
+    .replace(/[#*_`]/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\[|\]/g, '')
+    .replace(/・/g, '、')
+    .replace(/•/g, '、')
+    .replace(/-/g, '、')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
