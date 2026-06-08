@@ -136,14 +136,25 @@ function scoreAIProduct(p, qNorm) {
   const companyTerms = extractAITerms(p.company);
   const businessTerms = extractAITerms(p.business);
   const tagTerms = [];
+  const aliasTerms = [];
 
   (p.tags || []).forEach(tag => {
     extractAITerms(tag).forEach(t => tagTerms.push(t));
   });
 
+  (p.voiceAliases || []).forEach(alias => {
+    extractAITerms(alias).forEach(t => aliasTerms.push(t));
+  });
+
   boothTerms.forEach(t => {
     if (t === qNorm) score += 1000;
     else if (qNorm.includes(t)) score += 700;
+  });
+
+  aliasTerms.forEach((t, idx) => {
+    if (t === qNorm) score += 800 - idx;
+    else if (qNorm.includes(t)) score += 700 - idx;
+    else if (t.includes(qNorm)) score += 500 - idx;
   });
 
   companyTerms.forEach((t, idx) => {
@@ -192,6 +203,34 @@ function findAICompanySuggestion(userMsg) {
   const qNorm = normalizeAIText(userMsg);
   const qCore = normalizeAICompanyCore(userMsg);
   if (qNorm.length < 2 || qCore.length < 2) return null;
+
+  const aliasCandidates = P.map(p => {
+    const aliasTerms = [];
+    (p.voiceAliases || []).forEach(alias => {
+      extractAITerms(alias).forEach(t => aliasTerms.push(t));
+    });
+
+    let score = 0;
+    aliasTerms.forEach((t, idx) => {
+      if (!t || t.length < 2) return;
+      if (t === qNorm) score += 1000 - idx;
+      else if (qNorm.includes(t)) score += 900 - idx;
+      else if (t.includes(qNorm)) score += 700 - idx;
+    });
+
+    return { p, score };
+  })
+  .filter(s => s.score > 0)
+  .sort((a, b) => b.score - a.score);
+
+  if (aliasCandidates.length > 0) {
+    const top = aliasCandidates[0];
+    const second = aliasCandidates[1];
+
+    if (!second || second.score < top.score) {
+      return top.p;
+    }
+  }
 
   const alreadyMatched = P.some(p => {
     const boothMatched = extractAITerms(p.booth).some(t => t === qNorm);
