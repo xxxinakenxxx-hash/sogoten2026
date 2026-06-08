@@ -83,6 +83,7 @@ window.addEventListener('load', async () => {
     history.replaceState({}, '', location.pathname + (params.get('dev')==='1' ? '?dev=1' : ''));
     visitorGyotai = '';
     visitorQRCode = '';
+    userType = '';
     showConsentScreen();
     return;
   }
@@ -93,6 +94,7 @@ window.addEventListener('load', async () => {
     document.body.classList.add('reception-mode');
     visitorQRCode = 'reception';
     visitorGyotai = '';
+    userType = 'marubishi_staff';
     saveVisitor();
     showReceptionHome();
     return;
@@ -101,9 +103,55 @@ window.addEventListener('load', async () => {
   const hasConsent = localStorage.getItem(CONSENT_KEY) === '1';
   if (!hasConsent) {
     showConsentScreen();
-  } else if (!visitorQRCode) {
+  } else if (visitorQRCode && !userType) {
+    userType = 'visitor';
+    saveVisitor();
+    showHome();
+  } else if (!visitorQRCode && !userType) {
     showQRScreen();
   } else {
     showHome();
   }
 });
+
+// ============================================================
+// QRなし利用区分選択
+// ============================================================
+function showUserTypeScreen() {
+  _currentView = showUserTypeScreen;
+  if (typeof stopQRCamera === 'function') stopQRCamera();
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen" style="padding:40px 24px;display:flex;flex-direction:column;gap:16px;background:#fafaf8">
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-size:42px;margin-bottom:10px">👤</div>
+      <div style="font-size:20px;font-weight:700;color:#1a1a18">利用区分を選択してください</div>
+      <div style="font-size:13px;color:#73726c;line-height:1.6;margin-top:8px">
+        QRを読み取らずに利用する場合、集計用の区分を選択します。
+      </div>
+    </div>
+
+    <button onclick="selectUserType('visitor_no_qr')" style="width:100%;padding:16px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;text-align:left">
+      来場者として使う
+      <div style="font-size:12px;font-weight:400;opacity:.9;margin-top:4px">QRなし来場者として記録します</div>
+    </button>
+
+    <button onclick="selectUserType('marubishi_staff')" style="width:100%;padding:16px;background:#185FA5;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;text-align:left">
+      営業・スタッフとして使う
+      <div style="font-size:12px;font-weight:400;opacity:.9;margin-top:4px">丸菱営業・運営スタッフとして記録します</div>
+    </button>
+
+    <button onclick="selectUserType('exhibitor')" style="width:100%;padding:16px;background:#8A5A13;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;text-align:left">
+      出展社として使う
+      <div style="font-size:12px;font-weight:400;opacity:.9;margin-top:4px">出展社利用として記録します</div>
+    </button>
+  </div>`;
+}
+
+function selectUserType(type) {
+  visitorQRCode = '';
+  visitorGyotai = '';
+  userType = type;
+  saveVisitor();
+  showHome();
+}
