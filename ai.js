@@ -61,9 +61,21 @@ function aiSend() {
   if (!inp) return;
   const msg = inp.value.trim();
   if (!msg) return;
+
+  const suggestion = findAICompanySuggestion(msg);
+  if (suggestion) {
+    inp.value = '';
+    inp.style.height = 'auto';
+    showAICompanySuggestion(msg, suggestion);
+    return;
+  }
+
   inp.value = '';
   inp.style.height = 'auto';
+  sendAIMessage(msg);
+}
 
+function sendAIMessage(msg) {
   appendAiMsg('user', msg);
   aiHistory.push({role: 'user', content: msg});
 
@@ -88,11 +100,22 @@ function aiSend() {
   });
 }
 
+function toKatakanaAI(value) {
+  return String(value || '').replace(/[\u3041-\u3096]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) + 0x60)
+  );
+}
+
 function normalizeAIText(value) {
-  return String(value || '')
+  return toKatakanaAI(value)
     .replace(/株式会社|㈱|有限会社|㈲|合同会社|合資会社/g, '')
     .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/／\-]+/g, '')
     .toLowerCase();
+}
+
+function normalizeAICompanyCore(value) {
+  return normalizeAIText(value)
+    .replace(/機械|食品|工業|産業|商事|製作所|製菓|製粉|化工|会社|会/g, '');
 }
 
 function extractAITerms(value) {
@@ -161,6 +184,100 @@ function getAIContextBooths(userMsg) {
   .sort((a, b) => b.score - a.score);
 
   return scored.map(s => s.p).slice(0, 80);
+}
+
+function findAICompanySuggestion(userMsg) {
+  if (!P || P.length === 0) return null;
+
+  const qNorm = normalizeAIText(userMsg);
+  const qCore = normalizeAICompanyCore(userMsg);
+  if (qNorm.length < 2 || qCore.length < 2) return null;
+
+  const alreadyMatched = P.some(p => {
+    const boothMatched = extractAITerms(p.booth).some(t => t === qNorm);
+    const companyMatched = extractAITerms(p.company).some(t =>
+      t === qNorm || qNorm.includes(t)
+    );
+    return boothMatched || companyMatched;
+  });
+  if (alreadyMatched) return null;
+
+  const candidates = P.map(p => {
+    const company = String(p.company || '').trim();
+    const booth = String(p.booth || '').trim();
+    if (!company) return null;
+
+    const companyCore = normalizeAICompanyCore(company);
+    if (!companyCore || companyCore.length < 2) return null;
+
+    let score = 0;
+
+    if (qCore.includes(companyCore)) score += 120 + companyCore.length;
+    else if (companyCore.includes(qCore) && qCore.length >= 2) score += 90 + qCore.length;
+    else if (qCore.slice(0, 2) === companyCore.slice(0, 2)) score += 70;
+
+    if (score <= 0) return null;
+    return { p, score, company, booth };
+  })
+  .filter(Boolean)
+  .sort((a, b) => b.score - a.score);
+
+  if (candidates.length === 0) return null;
+
+  const top = candidates[0];
+  const second = candidates[1];
+
+  if (top.score < 72) return null;
+  if (second && second.score >= top.score - 5) return null;
+
+  return top.p;
+}
+
+function showAICompanySuggestion(originalMsg, product) {
+  const msgs = document.getElementById('aiMsgs');
+  if (!msgs || !product) return;
+
+  const cardId = 'aiSuggest_' + Date.now();
+  const company = product.company || '';
+  const booth = product.booth || '';
+
+  const div = document.createElement('div');
+  div.className = 'ai-msg bot';
+  div.id = cardId;
+
+  div.innerHTML = `
+    <div class="ai-bubble">
+      <div style="font-weight:700;margin-bottom:6px">もしかして「${escapeHtml(company)}」ですか？</div>
+      <div style="font-size:13px;color:#555;margin-bottom:10px">ブース ${escapeHtml(booth)} の出展社として案内できます。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="aiUseCompanySuggestion('${cardId}','${escapeJsAttr(company)}')" style="background:#0F6E56;color:white;border:none;border-radius:18px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">はい、これです</button>
+        <button onclick="aiCancelCompanySuggestion('${cardId}','${escapeJsAttr(originalMsg)}')" style="background:#f5f5f3;color:#444;border:1px solid #ddd;border-radius:18px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer">違います</button>
+      </div>
+    </div>
+    <div class="ai-time">${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'})}</div>
+  `;
+
+  msgs.appendChild(div);
+  scrollAiToBottom();
+}
+
+function aiUseCompanySuggestion(cardId, company) {
+  const card = document.getElementById(cardId);
+  if (card) card.remove();
+  sendAIMessage(company + 'について教えて');
+}
+
+function aiCancelCompanySuggestion(cardId, originalMsg) {
+  const card = document.getElementById(cardId);
+  if (card) card.remove();
+
+  const inp = document.getElementById('aiInp');
+  if (inp) {
+    inp.value = originalMsg;
+    inp.focus();
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 100) + 'px';
+  }
 }
 
 async function callOpenAI(userMsg) {
