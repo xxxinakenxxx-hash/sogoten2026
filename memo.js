@@ -2,6 +2,7 @@ function showMyMemo() {
   _currentView = showMyMemo;
   const list = myMemos.slice().sort((a,b) => b.ts - a.ts);
   let body;
+
   if (list.length === 0) {
     body = `<div class="memo-empty">
       <div class="me-icon"><i class="ti ti-notebook"></i></div>
@@ -10,7 +11,10 @@ function showMyMemo() {
     </div>`;
   } else {
     body = '<div class="memo-list">' + list.map(m => {
-      const memoTxt = m.memo ? `<div class="ml-memo">${escapeHtml(m.memo)}</div>` : `<div class="ml-memo ml-memo-empty">${tr('memoNone')}</div>`;
+      const memoTxt = m.memo
+        ? `<div class="ml-memo">${escapeHtml(m.memo)}</div>`
+        : `<div class="ml-memo ml-memo-empty">${tr('memoNone')}</div>`;
+
       return `<div class="ml-card">
         <div class="ml-hd">
           <div class="ml-booth">${m.booth}</div>
@@ -24,7 +28,6 @@ function showMyMemo() {
       </div>`;
     }).join('') + '</div>';
 
-    // メール送信オプション
     body += `<div class="memo-mail">
       <button class="mail-btn" onclick="sendMemosByMail()"><i class="ti ti-mail"></i> ${tr('memoMailBtn')}</button>
       <div class="mail-note">${tr('memoMailNote')}</div>
@@ -54,7 +57,6 @@ function openMemoEditor(booth, company) {
   const existing = findMemo(booth);
   const currentMemo = existing ? existing.memo : '';
 
-  // モーダルを画面に追加
   const modal = document.createElement('div');
   modal.id = 'memoModal';
   modal.className = 'memo-modal-bg';
@@ -86,6 +88,7 @@ function openMemoEditor(booth, company) {
         <button class="mm-btn mm-btn-save" onclick="saveMemoFromModal('${booth}','${escapeJsAttr(company)}')">${tr('memoSave')}</button>
       </div>
     </div>`;
+
   document.body.appendChild(modal);
   setTimeout(() => document.getElementById('memoText').focus(), 100);
 }
@@ -93,11 +96,14 @@ function openMemoEditor(booth, company) {
 function closeMemoEditor() {
   const m = document.getElementById('memoModal');
   if (m) m.remove();
-  if (memoRecognition && memoListening) { try { memoRecognition.stop(); } catch(e){} }
+
+  if (memoRecognition && memoListening) {
+    try { memoRecognition.stop(); } catch(e) {}
+  }
 }
 
 function saveMemoFromModal(booth, company) {
-  const memoTxt    = (document.getElementById('memoText').value || '').trim();
+  const memoTxt = (document.getElementById('memoText').value || '').trim();
   const inquiryTxt = (document.getElementById('inquiryText') ? document.getElementById('inquiryText').value || '' : '').trim();
 
   // 1) ローカルメモ保存（既存動作）
@@ -105,8 +111,11 @@ function saveMemoFromModal(booth, company) {
 
   // 2) GASにメモ記録（同意者のみ）
   if (localStorage.getItem(CONSENT_KEY) === '1') {
-    // 空欄でも「気になる」シグナルとして記録
-    sendMemoToGAS({ booth: booth, company: company, memo: memoTxt });
+    sendMemoToGAS({
+      booth: booth,
+      company: company,
+      memo: memoTxt
+    });
   }
 
   // 3) 問い合わせ記入があれば連絡先入力画面へ
@@ -117,31 +126,35 @@ function saveMemoFromModal(booth, company) {
   }
 
   closeMemoEditor();
-  // 検索結果画面なら再描画してアイコン状態更新
+
   if (typeof currentSearchResults !== 'undefined' && currentSearchResults && currentSearchLabel) {
     showResults(currentSearchResults, currentSearchLabel);
   }
 }
 
-// メモをGASに送信（fire-and-forget）
 // 入退場ログ送信（fire-and-forget）
 function recordEntryExit(action) {
   const url = GAS_URL + '?action=entryexit'
-    + '&qr='     + encodeURIComponent(visitorQRCode || '')
-    + '&gyotai=' + encodeURIComponent(visitorGyotai || '')
-    + '&entry='  + encodeURIComponent(action)
-    + '&session='+ encodeURIComponent(SESSION_ID || '');
+    + '&qr='       + encodeURIComponent(visitorQRCode || '')
+    + '&gyotai='   + encodeURIComponent(visitorGyotai || '')
+    + '&entry='    + encodeURIComponent(action)
+    + '&session='  + encodeURIComponent(SESSION_ID || '')
+    + '&userType=' + encodeURIComponent(userType || '');
+
   fetch(url).catch(() => {});
 }
 
+// メモをGASに送信（fire-and-forget）
 function sendMemoToGAS(p) {
   const url = GAS_URL + '?action=memo'
-    + '&qr='      + encodeURIComponent(visitorQRCode || '')
-    + '&gyotai='  + encodeURIComponent(visitorGyotai || '')
-    + '&booth='   + encodeURIComponent(p.booth || '')
-    + '&company=' + encodeURIComponent(p.company || '')
-    + '&memo='    + encodeURIComponent(p.memo || '')
-    + '&session=' + encodeURIComponent(SESSION_ID || '');
+    + '&qr='       + encodeURIComponent(visitorQRCode || '')
+    + '&gyotai='   + encodeURIComponent(visitorGyotai || '')
+    + '&booth='    + encodeURIComponent(p.booth || '')
+    + '&company='  + encodeURIComponent(p.company || '')
+    + '&memo='     + encodeURIComponent(p.memo || '')
+    + '&session='  + encodeURIComponent(SESSION_ID || '')
+    + '&userType=' + encodeURIComponent(userType || '');
+
   fetch(url).catch(() => {});
 }
 
@@ -159,14 +172,14 @@ function sendInquiryToGAS(p) {
     + '&inquiry='         + encodeURIComponent(p.inquiry || '')
     + '&gyotai='          + encodeURIComponent(visitorGyotai || '')
     + '&regtype='         + encodeURIComponent(p.regtype || '')
-    + '&session='         + encodeURIComponent(SESSION_ID || '');
+    + '&session='         + encodeURIComponent(SESSION_ID || '')
+    + '&userType='        + encodeURIComponent(userType || '');
+
   return fetch(url).catch(() => {});
 }
 
 // 連絡先入力フォーム
 function showInquiryForm(booth, company, inquiryText) {
-
-  // フォームを先に表示（DB照合は非同期で埋める）
   const modal = document.createElement('div');
   modal.id = 'inquiryModal';
   modal.className = 'memo-modal-bg';
@@ -206,10 +219,12 @@ function showInquiryForm(booth, company, inquiryText) {
         <button class="mm-btn mm-btn-save" id="inqSendBtn" onclick="submitInquiry('${booth}','${escapeJsAttr(company)}','${escapeJsAttr(inquiryText)}')">${tr('inqSend')}</button>
       </div>
     </div>`;
+
   document.body.appendChild(modal);
-  // 来場者DB照合なし：QR-IDはログに残るので展示会後にスプレッドシートで紐づけ
+
   const st = document.getElementById('inqDbStatus');
   if (st) st.style.display = 'none';
+
   document.getElementById('inqSendBtn').dataset.regtype = '会場';
 }
 
@@ -227,10 +242,25 @@ function submitInquiry(booth, company, inquiryText) {
   const consent = document.getElementById('inqConsent').checked;
   const regtype = document.getElementById('inqSendBtn').dataset.regtype || '不明';
 
-  if (!c)   { alert(tr('inqNeedCompany')); return; }
-  if (!n)   { alert(tr('inqNeedName')); return; }
-  if (!tel) { alert(tr('inqNeedTel')); return; }
-  if (!consent) { alert(tr('inqNeedConsent')); return; }
+  if (!c) {
+    alert(tr('inqNeedCompany'));
+    return;
+  }
+
+  if (!n) {
+    alert(tr('inqNeedName'));
+    return;
+  }
+
+  if (!tel) {
+    alert(tr('inqNeedTel'));
+    return;
+  }
+
+  if (!consent) {
+    alert(tr('inqNeedConsent'));
+    return;
+  }
 
   const btn = document.getElementById('inqSendBtn');
   btn.disabled = true;
@@ -249,6 +279,7 @@ function submitInquiry(booth, company, inquiryText) {
   }).then(() => {
     alert(tr('inqDone'));
     closeInquiryForm();
+
     if (typeof currentSearchResults !== 'undefined' && currentSearchResults && currentSearchLabel) {
       showResults(currentSearchResults, currentSearchLabel);
     }
@@ -296,6 +327,7 @@ function openOtherInquiry() {
         <button class="mm-btn mm-btn-save" id="oinqSendBtn" onclick="submitOtherInquiry()">${tr('oinqSend')}</button>
       </div>
     </div>`;
+
   document.body.appendChild(modal);
 }
 
@@ -311,13 +343,15 @@ function submitOtherInquiry() {
   const n    = (document.getElementById('oinqName').value    || '').trim();
   const tel  = (document.getElementById('oinqTel').value     || '').trim();
 
-  if (!txt) { alert(tr('oinqNeedContent')); return; }
+  if (!txt) {
+    alert(tr('oinqNeedContent'));
+    return;
+  }
 
   const btn = document.getElementById('oinqSendBtn');
   btn.disabled = true;
   btn.textContent = tr('inqSending');
 
-  // 問い合わせシートに記録（ブース欄は空欄、カテゴリを内容の先頭につける）
   sendInquiryToGAS({
     booth: '',
     company: '【' + cat + '】',
@@ -338,61 +372,84 @@ function submitOtherInquiry() {
 let memoRecognition = null;
 let memoListening = false;
 let memoMicCurrentBtn = null;
+
 function toggleMemoMic(targetId) {
   targetId = targetId || 'memoText';
+
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert(tr('micUnsupported'));
     return;
   }
-  const btnId = targetId === 'inquiryText' ? 'inquiryMicBtn' : 'memoMicBtn';
+
+  const btnId = targetId === 'inquiryText'
+    ? 'inquiryMicBtn'
+    : targetId === 'oinqText'
+      ? 'oinqMicBtn'
+      : 'memoMicBtn';
+
   const btn = document.getElementById(btnId);
+
   if (memoListening) {
     if (memoRecognition) memoRecognition.stop();
     memoListening = false;
+
     if (memoMicCurrentBtn) {
       memoMicCurrentBtn.classList.remove('mic-on');
       memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i>';
     }
+
     return;
   }
+
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   memoRecognition = new SR();
   memoRecognition.lang = 'ja-JP';
   memoRecognition.continuous = false;
   memoRecognition.interimResults = false;
+
   memoRecognition.onresult = (e) => {
     const txt = e.results[0][0].transcript;
     const ta = document.getElementById(targetId);
     if (ta) ta.value = ta.value ? ta.value + ' ' + txt : txt;
   };
+
   memoRecognition.onend = () => {
     memoListening = false;
+
     if (memoMicCurrentBtn) {
       memoMicCurrentBtn.classList.remove('mic-on');
       memoMicCurrentBtn.innerHTML = '<i class="ti ti-microphone"></i>';
     }
   };
+
   memoRecognition.start();
   memoListening = true;
   memoMicCurrentBtn = btn;
-  btn.classList.add('mic-on');
-  // 録音中のスタイルはCSSのmic-onクラスで表現
+
+  if (btn) {
+    btn.classList.add('mic-on');
+  }
 }
 
 // メモをメール送信（mailto:）
 function sendMemosByMail() {
   if (myMemos.length === 0) return;
+
   const list = myMemos.slice().sort((a,b) => b.ts - a.ts);
   const subject = '【丸菱総合展2026】マイメモ ' + list.length + '件';
+
   let body = '丸菱グループ食品機械と原材料 総合展2026\n';
   body += 'マイメモ一覧（' + list.length + '件）\n';
   body += '━━━━━━━━━━━━━━━━━━\n\n';
+
   list.forEach((m, i) => {
     body += '[' + (i+1) + '] ' + m.booth + ' ' + m.company + '\n';
     body += (m.memo ? m.memo : '（メモなし・気になる）') + '\n\n';
   });
+
   body += '━━━━━━━━━━━━━━━━━━\n';
   body += '第37回 丸菱グループ総合展2026\n';
   body += '2026年6月10-11日 マリンメッセ福岡A館\n';
+
   location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
 }
