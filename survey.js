@@ -41,12 +41,15 @@ function showSurvey() {
 
 function setRating(r) {
   window._surveyRating = r;
-  [1,2,3].forEach(i => document.getElementById('r'+i).classList.toggle('on', i===r));
+  [1,2,3].forEach(i => {
+    document.getElementById('r'+i).classList.toggle('on', i === r);
+  });
 }
 
 function toggleBooth(i) {
   const el = document.getElementById('bc'+i);
   const b  = visitedBooths[i];
+
   if (el.classList.toggle('on')) {
     if (!window._surveyBooths.includes(b)) window._surveyBooths.push(b);
   } else {
@@ -57,13 +60,16 @@ function toggleBooth(i) {
 function submitSurvey() {
   const rating = window._surveyRating || 0;
   const booths = (window._surveyBooths || []).join(',');
+
   const url = GAS_URL + '?action=survey'
     + '&rating='      + rating
     + '&booths='      + encodeURIComponent(booths)
     + '&searchCount=' + searchCount
     + '&session='     + SESSION_ID
     + '&gyotai='      + encodeURIComponent(visitorGyotai || '')
-    + '&qr='          + encodeURIComponent(visitorQRCode || '');
+    + '&qr='          + encodeURIComponent(visitorQRCode || '')
+    + '&userType='    + encodeURIComponent(userType || '');
+
   fetch(url).catch(() => {});
 
   document.getElementById('screen').innerHTML = `
@@ -79,14 +85,15 @@ function submitSurvey() {
 // ============================================================
 function showExitReport() {
   _currentView = showExitReport;
+
   const elapsed  = Math.floor((Date.now() - appStartTime) / 60000);
   const hours    = Math.floor(elapsed / 60);
   const minutes  = elapsed % 60;
   const timeStr  = hours > 0 ? tr('timeHM', hours, minutes) : tr('timeM', minutes);
 
-  const kws      = actionLog.searchKeywords.slice(-12);
-  const booths   = actionLog.viewedBooths.slice(0, 10);
-  const memoCount= myMemos.length;
+  const kws       = actionLog.searchKeywords.slice(-12);
+  const booths    = actionLog.viewedBooths.slice(0, 10);
+  const memoCount = myMemos.length;
 
   const kwHtml = kws.length
     ? kws.map(k => `<span class="report-kw">${escapeHtml(k.q.replace(/^\[AI\] /,''))}</span>`).join('')
@@ -189,6 +196,7 @@ function showExitReport() {
 function setSatV2(btn, cat, v) {
   if (cat === 'event') window._reportSatEvent = v;
   else if (cat === 'app') window._reportSatApp = v;
+
   document.querySelectorAll('.sat-btn[data-cat="' + cat + '"]').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
 }
@@ -204,9 +212,9 @@ function submitExitReport() {
   const ratingApp   = window._reportSatApp   || 0;
   const commentEl   = document.getElementById('surveyComment');
   const comment     = commentEl ? (commentEl.value || '').trim() : '';
-  const kws    = actionLog.searchKeywords.map(k => k.q).join(',');
-  const booths = actionLog.viewedBooths.map(b => b.booth).join(',');
-  const elapsed = Math.floor((Date.now() - appStartTime) / 60000);
+  const kws         = actionLog.searchKeywords.map(k => k.q).join(',');
+  const booths      = actionLog.viewedBooths.map(b => b.booth).join(',');
+  const elapsed     = Math.floor((Date.now() - appStartTime) / 60000);
 
   const url = GAS_URL + '?action=survey'
     + '&rating='      + ratingEvent
@@ -218,12 +226,16 @@ function submitExitReport() {
     + '&gyotai='      + encodeURIComponent(visitorGyotai || '')
     + '&qr='          + encodeURIComponent(visitorQRCode || '')
     + '&elapsed='     + elapsed
-    + '&keywords='    + encodeURIComponent(kws.slice(0,200));
+    + '&keywords='    + encodeURIComponent(kws.slice(0,200))
+    + '&userType='    + encodeURIComponent(userType || '');
+
   fetch(url).catch(() => {});
 
   recordEntryExit('退場');
 
-  try { sessionStorage.removeItem('sogoten2026_actions'); } catch(e) {}
+  try {
+    sessionStorage.removeItem('sogoten2026_actions');
+  } catch(e) {}
 
   const renderThanks = () => {
     _currentView = renderThanks;
@@ -238,5 +250,6 @@ function submitExitReport() {
       ${myMemos.length > 0 ? `<button onclick="showMyMemo()" style="margin-top:16px;background:#534AB7;color:#fff;border:none;padding:13px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer">${tr('erSendMemoBtn')}</button>` : ''}
     </div>`;
   };
+
   renderThanks();
 }
