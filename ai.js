@@ -91,22 +91,46 @@ function aiSend() {
 async function callOpenAI(userMsg) {
   if (!AI_ENABLED) return demoAIResponse(userMsg);
 
-  const qNormAI = userMsg.replace(/[\s　。、？！]+/g, '').toLowerCase();
+  const normalizeAIText = (value) => String(value || '')
+    .replace(/[株式会社㈱㈲有限会社合同会社合資会社]/g, '')
+    .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/\-]+/g, '')
+    .toLowerCase();
+
+  const qNormAI = normalizeAIText(userMsg);
   let contextBooths = [];
   if (qNormAI.length >= 2) {
-    const scored = P.map(p => {
-      const tags = p.tags || [];
-      let score = 0;
-      tags.forEach((tag, idx) => {
-        const t = tag.toLowerCase();
-        if (t === qNormAI) score += 100 - idx;
-        else if (t.includes(qNormAI)) score += 50 - idx;
-        else if (qNormAI.includes(t) && t.length >= 2) score += 20 - idx;
-      });
-      return { p, score };
-    });
-    scored.sort((a, b) => b.score - a.score);
-    contextBooths = scored.map(s => s.p).slice(0, 80);
+    const exactBooth = P.find(p =>
+      normalizeAIText(p.booth) === qNormAI
+    );
+
+    if (exactBooth) {
+      contextBooths = [exactBooth];
+    } else {
+      const scored = P.map(p => {
+        const tags = p.tags || [];
+        const booth = normalizeAIText(p.booth);
+        const company = normalizeAIText(p.company);
+        const business = normalizeAIText(p.business);
+        let score = 0;
+
+        if (booth && booth === qNormAI) score += 1000;
+        if (company && company === qNormAI) score += 500;
+        else if (company && (company.includes(qNormAI) || qNormAI.includes(company))) score += 300;
+        if (business && (business.includes(qNormAI) || qNormAI.includes(business))) score += 60;
+
+        tags.forEach((tag, idx) => {
+          const t = normalizeAIText(tag);
+          if (!t || t.length < 2) return;
+          if (t === qNormAI) score += 200 - idx;
+          else if (t.includes(qNormAI)) score += 100 - idx;
+          else if (qNormAI.includes(t)) score += 60 - idx;
+        });
+        return { p, score };
+      }).filter(s => s.score > 0);
+
+      scored.sort((a, b) => b.score - a.score);
+      contextBooths = scored.map(s => s.p).slice(0, 80);
+    }
   } else {
     contextBooths = P.slice(0, 80);
   }
@@ -197,14 +221,28 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 function demoAIResponse(msg) {
   const m = msg.toLowerCase();
   if (P && P.length > 0) {
-    const qNorm = msg.replace(/[　\s]/g,'').toLowerCase();
+    const normalizeAIText = (value) => String(value || '')
+      .replace(/[株式会社㈱㈲有限会社合同会社合資会社]/g, '')
+      .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/\-]+/g, '')
+      .toLowerCase();
+    const qNorm = normalizeAIText(msg);
     const scored = P.map(p => {
       let score = 0;
+      const booth = normalizeAIText(p.booth);
+      const company = normalizeAIText(p.company);
+      const business = normalizeAIText(p.business);
+
+      if (booth && booth === qNorm) score += 1000;
+      if (company && company === qNorm) score += 500;
+      else if (company && (company.includes(qNorm) || qNorm.includes(company))) score += 300;
+      if (business && (business.includes(qNorm) || qNorm.includes(business))) score += 60;
+
       (p.tags||[]).forEach((tag, idx) => {
-        const t = tag.toLowerCase();
-        if (t === qNorm)            score += 100 - idx;
-        else if (t.includes(qNorm)) score += 50 - idx;
-        else if (qNorm.includes(t) && t.length >= 2) score += 20 - idx;
+        const t = normalizeAIText(tag);
+        if (!t || t.length < 2) return;
+        if (t === qNorm)            score += 200 - idx;
+        else if (t.includes(qNorm)) score += 100 - idx;
+        else if (qNorm.includes(t)) score += 60 - idx;
       });
       return { p, score };
     }).filter(s => s.score > 0).sort((a,b) => b.score - a.score);
