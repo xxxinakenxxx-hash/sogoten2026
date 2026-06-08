@@ -2,6 +2,7 @@
 // ★ GAS Web App URL をここに設定してください
 // ============================================================
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
+
 // ?ai=1 のときだけOpenAI呼び出し。未指定はデモモード（APIキー不要）
 let AI_ENABLED = true;
 let RECEPTION_MODE = false;
@@ -21,15 +22,34 @@ const MEMO_KEY = 'sogoten2026_mymemos';
 let myMemos = [];  // [{booth, company, memo, ts}]
 let currentSearchResults = null;
 let currentSearchLabel = null;
-try { myMemos = JSON.parse(localStorage.getItem(MEMO_KEY) || '[]'); } catch(e) { myMemos = []; }
-function saveMemos() { try { localStorage.setItem(MEMO_KEY, JSON.stringify(myMemos)); } catch(e){} }
-function findMemo(booth) { return myMemos.find(m => m.booth === booth); }
+
+try {
+  myMemos = JSON.parse(localStorage.getItem(MEMO_KEY) || '[]');
+} catch(e) {
+  myMemos = [];
+}
+
+function saveMemos() {
+  try {
+    localStorage.setItem(MEMO_KEY, JSON.stringify(myMemos));
+  } catch(e) {}
+}
+
+function findMemo(booth) {
+  return myMemos.find(m => m.booth === booth);
+}
+
 function addMemo(booth, company, memo) {
   const existing = findMemo(booth);
-  if (existing) { existing.memo = memo; existing.ts = Date.now(); }
-  else { myMemos.push({booth, company, memo: memo || '', ts: Date.now()}); }
+  if (existing) {
+    existing.memo = memo;
+    existing.ts = Date.now();
+  } else {
+    myMemos.push({ booth, company, memo: memo || '', ts: Date.now() });
+  }
   saveMemos();
 }
+
 function deleteMemo(booth) {
   myMemos = myMemos.filter(m => m.booth !== booth);
   saveMemos();
@@ -63,14 +83,14 @@ const GYOTAI_MAP = {
 
 // 業態別AIプロンプト補足
 const GYOTAI_CONTEXT = {
-  'パン製造業':       '製パン・ベーカリーの専門家として回答。製パン工程、食パン・バゲット・クロワッサンなどの専門知識を活かす。',
+  'パン製造業': '製パン・ベーカリーの専門家として回答。製パン工程、食パン・バゲット・クロワッサンなどの専門知識を活かす。',
   'ケーキ・洋菓子製造業': 'パティシエ・洋菓子製造の専門家として回答。デコレーション、焼成、冷凍デザートなどの専門知識を活かす。',
-  '和菓子製造業':     '和菓子職人の視点で回答。餡・求肥・練り切りなど和菓子素材・機械に詳しく案内する。',
-  '小売・流通業':     '食品小売・流通業者の視点で回答。容量・賞味期限・価格帯・POP素材など販売適性を重視する。',
-  '飲食店':          '飲食店経営者の視点で回答。コスト・オペレーション効率・メニュー開発に焦点を当てる。',
+  '和菓子製造業': '和菓子職人の視点で回答。餡・求肥・練り切りなど和菓子素材・機械に詳しく案内する。',
+  '小売・流通業': '食品小売・流通業者の視点で回答。容量・賞味期限・価格帯・POP素材など販売適性を重視する。',
+  '飲食店': '飲食店経営者の視点で回答。コスト・オペレーション効率・メニュー開発に焦点を当てる。',
   'ホテル・ブライダル': 'ホテル・ウェディング業界の視点で回答。高品質・プレゼンテーション・大量調理に焦点を当てる。',
-  '食品卸・商社':     '食品卸・商社の視点で回答。ロット・価格・供給安定性・輸入品情報を重視する。',
-  '学校・給食':       '給食・集団調理の視点で回答。アレルゲン対応・大量調理・コスト管理を重視する。',
+  '食品卸・商社': '食品卸・商社の視点で回答。ロット・価格・供給安定性・輸入品情報を重視する。',
+  '学校・給食': '給食・集団調理の視点で回答。アレルゲン対応・大量調理・コスト管理を重視する。',
   'アイスクリーム・ジェラート': 'アイスクリーム・ジェラート製造の専門家として回答。乳脂肪・フリーザー・原料配合に詳しく案内する。',
   'コーヒー・カフェ': 'カフェ・コーヒー専門店の視点で回答。抽出機器・食材ペアリング・スイーツメニューに焦点を当てる。',
   '': '食品業界のプロとして回答する。',
@@ -78,17 +98,34 @@ const GYOTAI_CONTEXT = {
 
 let visitorGyotai = '';      // 判定済み業態名
 let visitorQRCode = '';      // スキャン済みQRコード
+let userType = '';           // visitor / visitor_no_qr / marubishi_staff / exhibitor
 let appStartTime  = Date.now();
 
 // ビジタープロフィールをsessionStorageで管理（再読込でも維持）
 try {
   const vd = JSON.parse(sessionStorage.getItem(VISITOR_KEY) || '{}');
   visitorGyotai = vd.gyotai || '';
-  visitorQRCode = vd.qr    || '';
+  visitorQRCode = vd.qr || '';
+  userType = vd.userType || '';
 } catch(e) {}
 
 function saveVisitor() {
-  try { sessionStorage.setItem(VISITOR_KEY, JSON.stringify({gyotai: visitorGyotai, qr: visitorQRCode})); } catch(e) {}
+  try {
+    sessionStorage.setItem(VISITOR_KEY, JSON.stringify({
+      gyotai: visitorGyotai,
+      qr: visitorQRCode,
+      userType: userType
+    }));
+  } catch(e) {}
+}
+
+function setUserType(type) {
+  userType = type || '';
+  saveVisitor();
+}
+
+function getUserType() {
+  return userType || '';
 }
 
 // 行動ログ（退場レポート用）
@@ -97,21 +134,27 @@ let actionLog = {
   viewedBooths:   [],   // [{booth, company, ts}]
   aiQueries:      0,
 };
+
 try {
   const al = JSON.parse(sessionStorage.getItem('sogoten2026_actions') || '{}');
   if (al.searchKeywords) actionLog = al;
 } catch(e) {}
+
 function saveActionLog() {
-  try { sessionStorage.setItem('sogoten2026_actions', JSON.stringify(actionLog)); } catch(e) {}
+  try {
+    sessionStorage.setItem('sogoten2026_actions', JSON.stringify(actionLog));
+  } catch(e) {}
 }
+
 function logKeyword(q) {
   if (!q || actionLog.searchKeywords.find(x => x.q === q)) return;
-  actionLog.searchKeywords.push({q, ts: Date.now()});
+  actionLog.searchKeywords.push({ q, ts: Date.now() });
   saveActionLog();
 }
+
 function logBooth(booth, company) {
   if (!booth || actionLog.viewedBooths.find(x => x.booth === booth)) return;
-  actionLog.viewedBooths.push({booth, company, ts: Date.now()});
+  actionLog.viewedBooths.push({ booth, company, ts: Date.now() });
   saveActionLog();
 }
 
