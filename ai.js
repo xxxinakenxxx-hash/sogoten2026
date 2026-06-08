@@ -88,52 +88,85 @@ function aiSend() {
   });
 }
 
+function normalizeAIText(value) {
+  return String(value || '')
+    .replace(/株式会社|㈱|有限会社|㈲|合同会社|合資会社/g, '')
+    .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/／\-]+/g, '')
+    .toLowerCase();
+}
+
+function extractAITerms(value) {
+  const raw = String(value || '');
+  const parts = raw.split(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/／\-]+/g);
+
+  return Array.from(new Set(
+    [raw, ...parts]
+      .map(v => normalizeAIText(v))
+      .filter(v => v && v.length >= 2)
+  ));
+}
+
+function scoreAIProduct(p, qNorm) {
+  let score = 0;
+
+  const boothTerms = extractAITerms(p.booth);
+  const companyTerms = extractAITerms(p.company);
+  const businessTerms = extractAITerms(p.business);
+  const tagTerms = [];
+
+  (p.tags || []).forEach(tag => {
+    extractAITerms(tag).forEach(t => tagTerms.push(t));
+  });
+
+  boothTerms.forEach(t => {
+    if (t === qNorm) score += 1000;
+    else if (qNorm.includes(t)) score += 700;
+  });
+
+  companyTerms.forEach((t, idx) => {
+    if (t === qNorm) score += 500 - idx;
+    else if (qNorm.includes(t)) score += 350 - idx;
+    else if (t.includes(qNorm)) score += 250 - idx;
+  });
+
+  businessTerms.forEach((t, idx) => {
+    if (t === qNorm) score += 120 - idx;
+    else if (qNorm.includes(t) || t.includes(qNorm)) score += 70 - idx;
+  });
+
+  tagTerms.forEach((t, idx) => {
+    if (t === qNorm) score += 200 - idx;
+    else if (qNorm.includes(t)) score += 120 - idx;
+    else if (t.includes(qNorm)) score += 90 - idx;
+  });
+
+  return score;
+}
+
+function getAIContextBooths(userMsg) {
+  const qNormAI = normalizeAIText(userMsg);
+  if (!P || P.length === 0) return [];
+  if (qNormAI.length < 2) return P.slice(0, 80);
+
+  const exactBooth = P.find(p =>
+    extractAITerms(p.booth).some(t => t === qNormAI)
+  );
+
+  if (exactBooth) return [exactBooth];
+
+  const scored = P.map(p => {
+    return { p, score: scoreAIProduct(p, qNormAI) };
+  })
+  .filter(s => s.score > 0)
+  .sort((a, b) => b.score - a.score);
+
+  return scored.map(s => s.p).slice(0, 80);
+}
+
 async function callOpenAI(userMsg) {
   if (!AI_ENABLED) return demoAIResponse(userMsg);
 
-  const normalizeAIText = (value) => String(value || '')
-    .replace(/[株式会社㈱㈲有限会社合同会社合資会社]/g, '')
-    .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/\-]+/g, '')
-    .toLowerCase();
-
-  const qNormAI = normalizeAIText(userMsg);
-  let contextBooths = [];
-  if (qNormAI.length >= 2) {
-    const exactBooth = P.find(p =>
-      normalizeAIText(p.booth) === qNormAI
-    );
-
-    if (exactBooth) {
-      contextBooths = [exactBooth];
-    } else {
-      const scored = P.map(p => {
-        const tags = p.tags || [];
-        const booth = normalizeAIText(p.booth);
-        const company = normalizeAIText(p.company);
-        const business = normalizeAIText(p.business);
-        let score = 0;
-
-        if (booth && booth === qNormAI) score += 1000;
-        if (company && company === qNormAI) score += 500;
-        else if (company && (company.includes(qNormAI) || qNormAI.includes(company))) score += 300;
-        if (business && (business.includes(qNormAI) || qNormAI.includes(business))) score += 60;
-
-        tags.forEach((tag, idx) => {
-          const t = normalizeAIText(tag);
-          if (!t || t.length < 2) return;
-          if (t === qNormAI) score += 200 - idx;
-          else if (t.includes(qNormAI)) score += 100 - idx;
-          else if (qNormAI.includes(t)) score += 60 - idx;
-        });
-        return { p, score };
-      }).filter(s => s.score > 0);
-
-      scored.sort((a, b) => b.score - a.score);
-      contextBooths = scored.map(s => s.p).slice(0, 80);
-    }
-  } else {
-    contextBooths = P.slice(0, 80);
-  }
+  const contextBooths = getAIContextBooths(userMsg);
 
   const boothContext = contextBooths.map(p =>
     `${p.booth} ${p.company}：${(p.tags||[]).slice(0,5).join('、')}`
@@ -193,7 +226,8 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 5. 見積・詳細希望には丸菱営業担当への連携を提案する
 6. 回答は簡潔に。200文字以内を目安にする
 7. 必ず${({ja:'日本語',en:'英語',zh:'中国語',ko:'韓国語'})[lang]||'日本語'}で回答する（来場者が選択した表示言語に合わせる）。ただしブース番号・会社名・商品名・固有名詞は原文の表記のまま記載する
-8. 複数の出展社を挙げる時は、必ず1社1行で改行する（例: "- 社名 ブース番号\n- 社名 ブース番号"）。横並びで列挙しない`;
+8. 複数の出展社を挙げる時は、必ず1社1行で改行する（例: "- 社名 ブース番号\n- 社名 ブース番号"）。横並びで列挙しない
+9. 【会場の出展社（抜粋）】に該当出展社がある場合は、「情報がない」と答えず、その出展社情報をもとに案内する`;
 
   const payload = {
     action: 'ai',
@@ -221,31 +255,14 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 function demoAIResponse(msg) {
   const m = msg.toLowerCase();
   if (P && P.length > 0) {
-    const normalizeAIText = (value) => String(value || '')
-      .replace(/[株式会社㈱㈲有限会社合同会社合資会社]/g, '')
-      .replace(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/\-]+/g, '')
-      .toLowerCase();
     const qNorm = normalizeAIText(msg);
+
     const scored = P.map(p => {
-      let score = 0;
-      const booth = normalizeAIText(p.booth);
-      const company = normalizeAIText(p.company);
-      const business = normalizeAIText(p.business);
+      return { p, score: scoreAIProduct(p, qNorm) };
+    })
+    .filter(s => s.score > 0)
+    .sort((a,b) => b.score - a.score);
 
-      if (booth && booth === qNorm) score += 1000;
-      if (company && company === qNorm) score += 500;
-      else if (company && (company.includes(qNorm) || qNorm.includes(company))) score += 300;
-      if (business && (business.includes(qNorm) || qNorm.includes(business))) score += 60;
-
-      (p.tags||[]).forEach((tag, idx) => {
-        const t = normalizeAIText(tag);
-        if (!t || t.length < 2) return;
-        if (t === qNorm)            score += 200 - idx;
-        else if (t.includes(qNorm)) score += 100 - idx;
-        else if (qNorm.includes(t)) score += 60 - idx;
-      });
-      return { p, score };
-    }).filter(s => s.score > 0).sort((a,b) => b.score - a.score);
     if (scored.length > 0) {
       const list = scored.slice(0,5).map(s => `• ${s.p.booth} ${s.p.company}`).join('\n');
       return `「${msg}」に関連する出展社をご案内します:\n${list}\n\n詳細はブース番号でMAPをご確認ください。`;
