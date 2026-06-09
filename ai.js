@@ -115,6 +115,28 @@ function aiSend() {
   sendAIMessage(msg);
 }
 
+function isPrivacyPolicyQuestion(msg) {
+  const text = normalizeAIText(msg);
+
+  return /プライバシーポリシー|プライバシ|個人情報|個人データ|個人情報取扱|個人情報取扱い|個人情報取り扱い|同意文|同意内容|利用規約|利用目的|データ利用|データ取扱|データ取り扱い|情報取扱|情報取り扱い|privacy|privacypolicy|personaldata|personalinformation| 개인정보|개인정보|隐私|隱私|个人信息|個人信息|同意/.test(text);
+}
+
+function getFixedPrivacyPolicyReply() {
+  if (lang === 'en') {
+    return 'You can review the explanation about personal data and AI use from the small “Personal Data & AI Use” link at the bottom of the home screen.\n\nThis app uses information obtained through the app, such as search keywords, booths viewed, AI consultation content, notes, inquiry content and other information, for improving expo operations, providing reports to exhibitors and improving service quality.\n\nIf you use the inquiry feature, the company name, name, contact details and other information you enter may be provided to exhibitors and Marubishi sales. Some entered content may also be sent to AI services used by the Company for generating AI responses.';
+  }
+
+  if (lang === 'zh') {
+    return '关于个人信息及AI使用的说明，可通过首页底部的小文字链接“个人信息・AI使用”进行确认。\n\n本应用会将通过应用取得的搜索关键词、浏览展位信息、向AI咨询的内容、备忘及咨询内容等信息，用于改善展会运营、向参展商提供报告及提升服务质量。\n\n使用咨询功能时，您输入的公司名称、姓名、联系方式等可能会提供给参展商及丸菱营业。输入内容的一部分或全部，也可能为生成AI回答而发送至本公司使用的AI服务。';
+  }
+
+  if (lang === 'ko') {
+    return '개인정보 및 AI 이용에 관한 설명은 홈 화면 하단의 작은 글자 링크 “개인정보・AI 이용”에서 확인할 수 있습니다.\n\n본 앱은 앱을 통해 취득한 검색 키워드, 열람 부스 정보, AI 상담 내용, 메모·문의 내용 및 기타 정보를 전시회 운영 개선, 출전사 리포트 제공 및 서비스 품질 향상을 위해 이용합니다.\n\n문의 기능을 이용하는 경우 입력한 회사명, 성명, 연락처 등이 출전사 및 마루비시 영업에 제공될 수 있습니다. 또한 입력 내용의 일부 또는 전부는 AI 답변 생성을 위해 당사가 이용하는 AI 서비스로 전송될 수 있습니다.';
+  }
+
+  return '個人情報およびAI利用に関する説明は、ホーム画面下部の小さい文字リンク「個人情報・AI利用について」から確認できます。\n\n本アプリでは、検索キーワード、閲覧ブース情報、AIへの相談内容、メモ・問い合わせ内容その他の情報を、展示会の運営改善、出展社へのレポート提供およびサービス品質向上のために利用します。\n\n問い合わせ機能をご利用の場合、入力いただいた会社名・氏名・連絡先等が出展社および丸菱営業に提供される場合があります。また、入力内容の一部または全部は、AIによる回答生成を目的として当社が利用するAIサービスに送信される場合があります。';
+}
+
 function sendAIMessage(msg) {
   appendAiMsg('user', msg);
   aiHistory.push({role: 'user', content: msg});
@@ -124,6 +146,21 @@ function sendAIMessage(msg) {
   document.getElementById('aiSendBtn').disabled = true;
 
   logKeyword('[AI] ' + msg);
+
+  if (isPrivacyPolicyQuestion(msg)) {
+    const fixedReply = getFixedPrivacyPolicyReply();
+    const loadEl = document.getElementById(loadId);
+
+    if (loadEl) {
+      loadEl.innerHTML = formatAIReply(fixedReply);
+      appendTTSButton(loadEl, fixedReply);
+    }
+
+    aiHistory.push({role: 'assistant', content: fixedReply});
+    document.getElementById('aiSendBtn').disabled = false;
+    scrollAiToBottom();
+    return;
+  }
 
   callOpenAI(msg).then(reply => {
     const loadEl = document.getElementById(loadId);
