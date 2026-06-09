@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>総合展2026 本番監視画面</title>
+  <style>
+    :root {
+      --green: #0F6E56;
+      --green2: #E1F5EE;
+      --red: #C44A2D;
+      --red2: #FCEBE6;
+      --yellow: #A36B00;
+      --yellow2: #FFF4D6;
+      --ink: #262624;
+      --sub: #666;
+      --line: #e7e3dc;
+      --bg: #f7f6f2;
+      --card: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 14px 16px;
+    }
+
+    .head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+
+    .sub {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    .refresh-btn {
+      border: 0;
+      background: var(--green);
+      color: white;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    main {
+      padding: 14px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .status-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.03);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lamp {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .normal .lamp {
+      background: var(--green2);
+      color: var(--green);
+    }
+
+    .warning .lamp {
+      background: var(--yellow2);
+      color: var(--yellow);
+    }
+
+    .danger .lamp {
+      background: var(--red2);
+      color: var(--red);
+    }
+
+    .status-title {
+      font-size: 20px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .status-msg {
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      min-height: 100px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .metric-foot {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--sub);
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section h2 {
+      font-size: 16px;
+      margin: 0 0 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 6px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      color: var(--sub);
+      font-size: 12px;
+      font-weight: 700;
+      background: #faf9f6;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .empty {
+      color: var(--sub);
+      font-size: 13px;
+      padding: 10px 0;
+    }
+
+    .error-box {
+      background: var(--red2);
+      color: var(--red);
+      border: 1px solid rgba(196,74,45,.35);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    @media (max-width: 880px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .head-row {
+        align-items: flex-start;
+      }
+
+      h1 {
+        font-size: 16px;
+      }
+
+      .refresh-btn {
+        padding: 9px 12px;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 8px 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="head-row">
+      <div>
+        <h1>総合展2026 本番監視画面</h1>
+        <div class="sub" id="lastUpdated">読み込み中...</div>
+      </div>
+      <button class="refresh-btn" onclick="loadStatus()">更新</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="error-box" id="errorBox"></div>
+
+    <section class="status-card normal" id="statusCard">
+      <div class="status-row">
+        <div class="lamp" id="statusIcon">●</div>
+        <div>
+          <div class="status-title" id="statusTitle">読み込み中</div>
+          <div class="status-msg" id="statusMessage">GASから状況を取得しています。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="metric">
+        <div class="metric-label">AI送信 直近1分</div>
+        <div class="metric-value" id="ai1">-</div>
+        <div class="metric-foot">目安：21件以上で危険</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">AI送信 直近5分</div>
+        <div class="metric-value" id="ai5">-</div>
+        <div class="metric-foot">目安：60件以上で危険</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">AIログ累計</div>
+        <div class="metric-value" id="aiTotal">-</div>
+        <div class="metric-foot" id="aiLatest">最終: -</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">エラー累計</div>
+        <div class="metric-value" id="errorTotal">-</div>
+        <div class="metric-foot" id="errorLatest">最終: -</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">検索ログ</div>
+        <div class="metric-value" id="searchTotal">-</div>
+        <div class="metric-foot" id="searchLatest">最終: -</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">メモ</div>
+        <div class="metric-value" id="memoTotal">-</div>
+        <div class="metric-foot" id="memoLatest">最終: -</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">問い合わせ</div>
+        <div class="metric-value" id="inquiryTotal">-</div>
+        <div class="metric-foot" id="inquiryLatest">最終: -</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">アンケート</div>
+        <div class="metric-value" id="surveyTotal">-</div>
+        <div class="metric-foot" id="surveyLatest">最終: -</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>直近AI質問</h2>
+      <div id="aiTableWrap" class="empty">読み込み中...</div>
+    </section>
+
+    <section class="section">
+      <h2>直近エラー</h2>
+      <div id="errorTableWrap" class="empty">読み込み中...</div>
+    </section>
+  </main>
+
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyavH18rQHlhsjPkECUxr9oiyCU0AKhf0aWcG3G53FzF6r1vitTwxDRDULji2iOKU3h/exec';
+
+    const params = new URLSearchParams(location.search);
+    const ADMIN_TOKEN = params.get('token') || '';
+
+    function esc(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value == null || value === '' ? '-' : value;
+    }
+
+    function setError(message) {
+      const box = document.getElementById('errorBox');
+      if (!box) return;
+
+      if (!message) {
+        box.style.display = 'none';
+        box.textContent = '';
+        return;
+      }
+
+      box.style.display = 'block';
+      box.textContent = message;
+    }
+
+    async function loadStatus() {
+      setError('');
+
+      try {
+        const url =
+          GAS_URL +
+          '?action=adminStatus' +
+          '&token=' + encodeURIComponent(ADMIN_TOKEN) +
+          '&_=' + Date.now();
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const data = await res.json();
+        if (data.status !== 'ok') {
+          throw new Error(data.error || 'adminStatus error');
+        }
+
+        renderStatus(data);
+      } catch (err) {
+        setError('監視データの取得に失敗しました: ' + err.message);
+        setText('lastUpdated', '取得失敗: ' + new Date().toLocaleTimeString('ja-JP'));
+      }
+    }
+
+    function renderStatus(data) {
+      setText('lastUpdated', '最終更新: ' + data.generatedAt);
+
+      const card = document.getElementById('statusCard');
+      const level = data.congestion && data.congestion.level ? data.congestion.level : 'normal';
+      card.className = 'status-card ' + level;
+
+      const mark = level === 'danger' ? '!' : level === 'warning' ? '▲' : '●';
+      setText('statusIcon', mark);
+      setText('statusTitle', data.congestion.label);
+      setText('statusMessage', data.congestion.message);
+
+      setText('ai1', data.ai.last1Min);
+      setText('ai5', data.ai.last5Min);
+      setText('aiTotal', data.ai.total);
+      setText('aiLatest', '最終: ' + (data.ai.latestTime || '-'));
+
+      setText('errorTotal', data.counts.errors);
+      setText('errorLatest', '最終: ' + (data.latestTimes.errors || '-'));
+
+      setText('searchTotal', data.counts.search);
+      setText('searchLatest', '最終: ' + (data.latestTimes.search || '-'));
+
+      setText('memoTotal', data.counts.memo);
+      setText('memoLatest', '最終: ' + (data.latestTimes.memo || '-'));
+
+      setText('inquiryTotal', data.counts.inquiry);
+      setText('inquiryLatest', '最終: ' + (data.latestTimes.inquiry || '-'));
+
+      setText('surveyTotal', data.counts.survey);
+      setText('surveyLatest', '最終: ' + (data.latestTimes.survey || '-'));
+
+      renderAITable(data.ai.latest || []);
+      renderErrorTable(data.errors || []);
+    }
+
+    function renderAITable(rows) {
+      const wrap = document.getElementById('aiTableWrap');
+
+      if (!rows.length) {
+        wrap.className = 'empty';
+        wrap.textContent = 'AIログはまだありません。';
+        return;
+      }
+
+      wrap.className = '';
+
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>日時</th>
+              <th>質問</th>
+              <th>回答</th>
+              <th>業態</th>
+              <th>QR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td class="mono">${esc(r.time)}</td>
+                <td>${esc(r.question)}</td>
+                <td>${esc(r.answer)}</td>
+                <td>${esc(r.gyotai)}</td>
+                <td class="mono">${esc(r.qr)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderErrorTable(rows) {
+      const wrap = document.getElementById('errorTableWrap');
+
+      if (!rows.length) {
+        wrap.className = 'empty';
+        wrap.textContent = 'エラーは記録されていません。';
+        return;
+      }
+
+      wrap.className = '';
+
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>日時</th>
+              <th>発生箇所</th>
+              <th>action</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td class="mono">${esc(r.time)}</td>
+                <td>${esc(r.source)}</td>
+                <td class="mono">${esc(r.action)}</td>
+                <td>${esc(r.message)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 30000);
+  </script>
+</body>
+</html>
