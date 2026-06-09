@@ -25,7 +25,6 @@ function showQRScreen() {
     </div>
   </div>`;
 
-  // カメラQR読み取り（jsQR使用）
   startQRCamera();
 }
 
@@ -36,13 +35,14 @@ function startQRCamera() {
 
   const reader = document.getElementById('qrReader');
   if (!reader) return;
+
   reader.appendChild(video);
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   let scanning = true;
 
-  navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}})
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     .then(stream => {
       video.srcObject = stream;
       video.play();
@@ -68,9 +68,9 @@ function startQRCamera() {
 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-      // jsQRが利用可能なら使用
       if (typeof jsQR !== 'undefined') {
         const code = jsQR(imageData.data, imageData.width, imageData.height);
+
         if (code && code.data) {
           scanning = false;
           stopQRCamera();
@@ -93,29 +93,66 @@ function stopQRCamera() {
 
 function skipQR() {
   stopQRCamera();
-
   visitorGyotai = '';
   visitorQRCode = '';
   userType = '';
   saveVisitor();
-
   showUserTypeScreen();
+}
+
+function showUserTypeScreen() {
+  _currentView = showUserTypeScreen;
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen" style="padding:34px 22px;display:flex;flex-direction:column;gap:14px;text-align:center">
+    <div style="font-size:48px">👤</div>
+    <div style="font-size:20px;font-weight:800;color:#1a1a18">利用区分を選択</div>
+    <div style="font-size:13px;color:#73726c;line-height:1.6">
+      QRなしで利用する場合は、該当する区分を選んでください。
+    </div>
+
+    <button onclick="selectUserType('visitor_no_qr')" style="width:100%;padding:16px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer">
+      QRなしの来場者
+    </button>
+
+    <button onclick="selectUserType('marubishi_staff')" style="width:100%;padding:16px;background:#534AB7;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer">
+      QRなしの丸菱
+    </button>
+
+    <button onclick="selectUserType('exhibitor')" style="width:100%;padding:16px;background:#A36B00;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer">
+      QRなしの出展社
+    </button>
+
+    <button onclick="showQRScreen()" style="width:100%;padding:13px;background:#f1f0eb;color:#444;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">
+      QR読み取りに戻る
+    </button>
+  </div>`;
+}
+
+function selectUserType(type) {
+  visitorQRCode = '';
+  visitorGyotai = '';
+  userType = type;
+  saveVisitor();
+
+  const consent = localStorage.getItem(CONSENT_KEY);
+  if (consent === '1') {
+    recordEntryExit('入場');
+  }
+
+  showHome();
 }
 
 function processQRCode(code) {
   const normalized = code.trim().toLowerCase();
-
-  // kd69-xxxxxxx 形式チェック
   const gyotai = GYOTAI_MAP[normalized] || null;
 
   stopQRCamera();
-
   visitorQRCode = normalized;
   visitorGyotai = gyotai || '';
   userType = 'visitor';
   saveVisitor();
 
-  // ログ送信
   const consent = localStorage.getItem(CONSENT_KEY);
   if (consent === '1') {
     sendLog({
@@ -123,31 +160,43 @@ function processQRCode(code) {
       lang: lang,
       booth: normalized,
       found: gyotai ? 'あり' : 'なし',
-      searchCount: 0,
-      userType: userType
+      searchCount: 0
     });
 
-    // 入退場ログにも記録
     recordEntryExit('入場');
   }
 
-  // 業態確認画面を表示してからホームへ
   showGyotaiConfirm(gyotai, normalized);
 }
 
 function showGyotaiConfirm(gyotai, qr) {
   _currentView = () => showGyotaiConfirm(gyotai, qr);
-  const gyotaiDisplay = gyotai || '未判定（スキップしてください）';
 
   document.getElementById('screen').innerHTML = `
   <div class="screen" style="padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
     <div style="font-size:56px">✅</div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a18">${tr('gcConfirmed')}</div>
-    <div style="font-size:14px;color:#73726c">${tr('gcQr', escapeHtml(qr))}</div>
-    ${gyotai ? `<div><div style="font-size:13px;color:#73726c;margin-bottom:6px">${tr('gcYourBiz')}</div>
-      <span class="business-tag" style="font-size:15px;padding:6px 18px">${escapeHtml(gyotai)}</span></div>` 
-    : `<div style="font-size:13px;color:#E24B4A">${tr('gcUndetected')}</div>`}
-    <div style="font-size:12px;color:#888780;line-height:1.6">${tr('gcAiNote')}</div>
+
+    <div style="font-size:20px;font-weight:700;color:#1a1a18">
+      ${tr('gcConfirmed')}
+    </div>
+
+    <div style="font-size:14px;color:#73726c">
+      ${tr('gcQr', escapeHtml(qr))}
+    </div>
+
+    ${
+      gyotai
+        ? `<div>
+            <div style="font-size:13px;color:#73726c;margin-bottom:6px">${tr('gcYourBiz')}</div>
+            <span class="business-tag" style="font-size:15px;padding:6px 18px">${escapeHtml(gyotai)}</span>
+          </div>`
+        : `<div style="font-size:13px;color:#E24B4A">${tr('gcUndetected')}</div>`
+    }
+
+    <div style="font-size:12px;color:#888780;line-height:1.6">
+      ${tr('gcAiNote')}
+    </div>
+
     <button onclick="showHome()" style="width:100%;max-width:300px;padding:15px;background:#0F6E56;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px">
       <i class="ti ti-arrow-right"></i> ${tr('gcStart')}
     </button>
