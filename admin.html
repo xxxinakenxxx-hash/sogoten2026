@@ -59,6 +59,14 @@
       color: var(--sub);
     }
 
+    .refresh-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .refresh-btn {
       border: 0;
       background: var(--green);
@@ -68,6 +76,12 @@
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .last-updated-side {
+      font-size: 12px;
+      color: var(--sub);
       white-space: nowrap;
     }
 
@@ -240,6 +254,10 @@
         font-size: 16px;
       }
 
+      .refresh-area {
+        justify-content: flex-start;
+      }
+
       .refresh-btn {
         padding: 9px 12px;
       }
@@ -261,7 +279,10 @@
         <h1>総合展2026 本番監視画面</h1>
         <div class="sub" id="lastUpdated">読み込み中...</div>
       </div>
-      <button class="refresh-btn" onclick="loadStatus()">更新</button>
+      <div class="refresh-area">
+        <button class="refresh-btn" onclick="loadStatus()">更新</button>
+        <div class="last-updated-side" id="lastUpdatedSide">前回更新: -</div>
+      </div>
     </div>
   </header>
 
@@ -393,13 +414,16 @@
 
         renderStatus(data);
       } catch (err) {
+        const failedAt = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
         setError('監視データの取得に失敗しました: ' + err.message);
-        setText('lastUpdated', '取得失敗: ' + new Date().toLocaleTimeString('ja-JP'));
+        setText('lastUpdated', '取得失敗: ' + failedAt);
+        setText('lastUpdatedSide', '前回更新: 取得失敗');
       }
     }
 
     function renderStatus(data) {
       setText('lastUpdated', '最終更新: ' + data.generatedAt);
+      setText('lastUpdatedSide', '前回更新: ' + data.generatedAt);
 
       const card = document.getElementById('statusCard');
       const level = data.congestion && data.congestion.level ? data.congestion.level : 'normal';
@@ -507,7 +531,7 @@
     }
 
     loadStatus();
-    setInterval(loadStatus, 30000);
+    setInterval(loadStatus, 60000);
   </script>
 </body>
 </html>
