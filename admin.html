@@ -302,6 +302,30 @@
 
     <section class="grid">
       <div class="metric">
+        <div class="metric-label">QR入場</div>
+        <div class="metric-value" id="usageQrEntry">-</div>
+        <div class="metric-foot">QRで入場登録した人</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">QRなし来場者</div>
+        <div class="metric-value" id="usageNoQrVisitor">-</div>
+        <div class="metric-foot">QRなしで来場者として利用</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">QRなし丸菱</div>
+        <div class="metric-value" id="usageMarubishi">-</div>
+        <div class="metric-foot">丸菱営業・運営スタッフ</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">QRなし出展社</div>
+        <div class="metric-value" id="usageExhibitor">-</div>
+        <div class="metric-foot">出展社として利用</div>
+      </div>
+
+      <div class="metric">
         <div class="metric-label">AI送信 直近1分</div>
         <div class="metric-value" id="ai1">-</div>
         <div class="metric-foot">目安：21件以上で危険</div>
@@ -460,6 +484,12 @@
       setText('statusIcon', mark);
       setText('statusTitle', data.congestion.label);
       setText('statusMessage', data.congestion.message);
+
+      const usage = data.usageType || {};
+      setText('usageQrEntry', usage.qrEntry || 0);
+      setText('usageNoQrVisitor', usage.noQrVisitor || 0);
+      setText('usageMarubishi', usage.marubishi || 0);
+      setText('usageExhibitor', usage.exhibitor || 0);
 
       setText('ai1', data.ai.last1Min);
       setText('ai5', data.ai.last5Min);
