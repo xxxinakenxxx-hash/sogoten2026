@@ -30,6 +30,7 @@ function showAIConcierge() {
       <div class="res-q">${tr('aiTitle')}</div>
     </div>
     <div class="ai-msgs" id="aiMsgs">
+      <div id="aiStatusNotice" style="display:none"></div>
       <div style="text-align:center;padding:8px 0 4px">${bizBadge}</div>
       <div class="ai-msg bot">
         <div class="ai-bubble">${welcome}</div>
@@ -50,6 +51,42 @@ function showAIConcierge() {
     new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
 
   setTimeout(() => document.getElementById('aiInp') && document.getElementById('aiInp').focus(), 300);
+
+  fetch(GAS_URL + '?action=aiStatus&_=' + Date.now())
+    .then(res => res.json())
+    .then(data => {
+      if (!data || data.status !== 'ok') return;
+      if (!data.level || data.level === 'normal') return;
+
+      const notice = document.getElementById('aiStatusNotice');
+      if (!notice) return;
+
+      const isDanger = data.level === 'danger';
+
+      notice.style.display = 'block';
+      notice.style.margin = '8px 0 10px';
+      notice.style.padding = '10px 12px';
+      notice.style.borderRadius = '12px';
+      notice.style.background = isDanger ? '#FCEBE6' : '#FFF4D6';
+      notice.style.border = '1px solid ' + (isDanger ? '#C44A2D' : '#A36B00');
+      notice.style.color = isDanger ? '#C44A2D' : '#7A5200';
+      notice.style.fontSize = '13px';
+      notice.style.lineHeight = '1.55';
+      notice.style.fontWeight = '700';
+
+      notice.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:15px;line-height:1.4">${isDanger ? '⚠️' : '▲'}</div>
+          <div>
+            <div style="margin-bottom:2px">${escapeHtml(data.label || '混雑中')}</div>
+            <div style="font-weight:500">${escapeHtml(data.message || '')}</div>
+          </div>
+        </div>
+      `;
+    })
+    .catch(() => {
+      // 混雑状況の取得失敗は来場者画面では無視
+    });
 }
 
 function aiSendExample(text) {
