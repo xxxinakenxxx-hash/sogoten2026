@@ -137,8 +137,13 @@ function recordEntryExit(action) {
   const url = GAS_URL + '?action=entryexit'
     + '&qr='       + encodeURIComponent(visitorQRCode || '')
     + '&gyotai='   + encodeURIComponent(visitorGyotai || '')
-    +
-    
+    + '&entry='    + encodeURIComponent(action || '')
+    + '&session='  + encodeURIComponent(SESSION_ID || '')
+    + '&userType=' + encodeURIComponent(userType || '');
+
+  fetch(url).catch(() => {});
+}
+
 // メモをGASに送信（fire-and-forget）
 function sendMemoToGAS(p) {
   const url = GAS_URL + '?action=memo'
