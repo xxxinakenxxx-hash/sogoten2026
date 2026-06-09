@@ -248,6 +248,7 @@
 
       .head-row {
         align-items: flex-start;
+        flex-direction: column;
       }
 
       h1 {
@@ -394,6 +395,27 @@
       box.textContent = message;
     }
 
+    function timeToMillis(value) {
+      if (!value) return 0;
+
+      const s = String(value).trim();
+      if (!s) return 0;
+
+      const normalized = s.replace(/\//g, '-');
+      const d = new Date(normalized);
+      const t = d.getTime();
+
+      return isNaN(t) ? 0 : t;
+    }
+
+    function newestFirst(rows) {
+      return (rows || []).slice().sort((a, b) => {
+        const ta = timeToMillis(a.time);
+        const tb = timeToMillis(b.time);
+        return tb - ta;
+      });
+    }
+
     async function loadStatus() {
       setError('');
 
@@ -414,7 +436,12 @@
 
         renderStatus(data);
       } catch (err) {
-        const failedAt = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const failedAt = new Date().toLocaleTimeString('ja-JP', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+
         setError('監視データの取得に失敗しました: ' + err.message);
         setText('lastUpdated', '取得失敗: ' + failedAt);
         setText('lastUpdatedSide', '前回更新: 取得失敗');
@@ -460,8 +487,9 @@
 
     function renderAITable(rows) {
       const wrap = document.getElementById('aiTableWrap');
+      const sortedRows = newestFirst(rows);
 
-      if (!rows.length) {
+      if (!sortedRows.length) {
         wrap.className = 'empty';
         wrap.textContent = 'AIログはまだありません。';
         return;
@@ -481,7 +509,7 @@
             </tr>
           </thead>
           <tbody>
-            ${rows.map(r => `
+            ${sortedRows.map(r => `
               <tr>
                 <td class="mono">${esc(r.time)}</td>
                 <td>${esc(r.question)}</td>
@@ -497,8 +525,9 @@
 
     function renderErrorTable(rows) {
       const wrap = document.getElementById('errorTableWrap');
+      const sortedRows = newestFirst(rows);
 
-      if (!rows.length) {
+      if (!sortedRows.length) {
         wrap.className = 'empty';
         wrap.textContent = 'エラーは記録されていません。';
         return;
@@ -517,7 +546,7 @@
             </tr>
           </thead>
           <tbody>
-            ${rows.map(r => `
+            ${sortedRows.map(r => `
               <tr>
                 <td class="mono">${esc(r.time)}</td>
                 <td>${esc(r.source)}</td>
@@ -531,7 +560,6 @@
     }
 
     loadStatus();
-    setInterval(loadStatus, 60000);
   </script>
 </body>
 </html>
