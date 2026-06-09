@@ -9,6 +9,34 @@ function showInit() {
   </div>`;
 }
 
+function privacyInfoLinkText() {
+  if (lang === 'en') return 'Personal Data & AI Use';
+  if (lang === 'zh') return '个人信息・AI使用';
+  if (lang === 'ko') return '개인정보・AI 이용';
+  return '個人情報・AI利用について';
+}
+
+function showPrivacyInfo(backFnName) {
+  const backFn = backFnName || 'showHome';
+  _currentView = function(){ showPrivacyInfo(backFn); };
+
+  document.getElementById('screen').innerHTML = `
+  <div class="screen">
+    <div class="sub-hd">
+      <button class="back-btn" onclick="${backFn}()"><i class="ti ti-arrow-left"></i></button>
+      <div class="sub-hd-ttl">${tr('consentAccTitle')}</div>
+    </div>
+
+    <div style="padding:18px 18px 28px;font-size:14px;line-height:1.8;color:#333">
+      <div style="font-weight:700;font-size:16px;margin-bottom:12px">${tr('consentAccTitle')}</div>
+      <p style="margin:0 0 14px">${tr('consentP1')}</p>
+      <p style="margin:0 0 14px">${tr('consentP2')}</p>
+      <p style="margin:0 0 14px">${tr('consentP3')}</p>
+      <p style="margin:0;color:#666;font-size:12px">${tr('consentPrevail')}</p>
+    </div>
+  </div>`;
+}
+
 function showReceptionHome() {
   _currentView = showReceptionHome;
   document.getElementById('screen').innerHTML = `
@@ -34,6 +62,12 @@ function showReceptionHome() {
         style="width:100%;padding:16px;background:#fff;border:1.5px solid #0F6E56;color:#0F6E56;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
         <i class="ti ti-map" style="font-size:20px"></i> 会場MAPを見る
       </button>
+    </div>
+    <div style="padding:10px 16px 16px;text-align:center">
+      <span onclick="showPrivacyInfo('showReceptionHome')"
+        style="font-size:11px;color:#aaa;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        ${privacyInfoLinkText()}
+      </span>
     </div>
   </div>`;
 }
@@ -78,7 +112,11 @@ function showHome() {
         <span style="display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-check"></i> ${tr('exitMain')}</span>
       </button>
     </div>
-    <div style="padding:0 16px 16px;display:flex;align-items:center;justify-content:flex-end">
+    <div style="padding:0 16px 16px;text-align:center">
+      <span onclick="showPrivacyInfo('showHome')"
+        style="font-size:11px;color:#aaa;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        ${privacyInfoLinkText()}
+      </span>
     </div>
   </div>`;
 }
@@ -119,4 +157,3 @@ function showBoothSearch() {
     </div>
   </div>`;
 }
-
