@@ -287,6 +287,7 @@ function normalizeAICompanyCore(value) {
 
 function normalizeAIQueryForBooth(value) {
   let text = normalizeAIText(value);
+  if (/パン(ノ)?袋|パン用袋|食パン袋|菓子パン袋|ケーキ箱|ケーキ用箱|洋菓子箱|菓子箱|ギフト箱/.test(text)) return '包材包装資材袋箱包装パッケージ';
 
   const stopWords = [
     'ノ場所ヲ教エテ',
