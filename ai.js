@@ -288,8 +288,7 @@ function normalizeAICompanyCore(value) {
 function normalizeAIQueryForBooth(value) {
   let text = normalizeAIText(value);
   if (/パン(ノ)?袋|パン用袋|食パン袋|菓子パン袋|ケーキ箱|ケーキ用箱|洋菓子箱|菓子箱|ギフト箱/.test(text)) return '包材';
-  if (/畜肉|食肉|肉製品|加工肉|ハム|ソーセージ|ベーコン/.test(text)) return '畜肉食肉肉ミートハムソーセージベーコン加工肉';
-  const stopWords = [
+  if (/畜肉|食肉|肉製品|加工肉|ハム|ソーセージ|ベーコン|マース|まーす|mars/.test(text)) return '畜肉食肉肉ミートハムソーセージベーコン加工肉マースmars';
     'ノ場所ヲ教エテ',
     'ノ場所教エテ',
     '場所ヲ教エテ',
