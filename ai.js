@@ -292,10 +292,6 @@ function normalizeAIQueryForBooth(value) {
     return '包材';
   }
 
-  if (/畜肉|食肉|肉製品|加工肉|ハム|ソーセージ|ベーコン/.test(text)) {
-    return '畜肉食肉肉ミートハムソーセージベーコン加工肉マースmars';
-  }
-
   const stopWords = [
     'ノ場所ヲ教エテ',
     'ノ場所教エテ',
