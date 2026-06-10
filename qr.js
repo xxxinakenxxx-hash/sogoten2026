@@ -3,24 +3,46 @@
 // ============================================================
 let qrScanner = null;
 
-function showQRScreen() {
+function showQRScreen(message) {
   _currentView = showQRScreen;
   stopQRCamera();
+
+  const noticeHtml = message
+    ? `<div style="background:#FCEBE6;border:2px solid #C44A2D;color:#C44A2D;border-radius:14px;padding:14px 12px;font-size:17px;font-weight:800;line-height:1.55;margin-bottom:14px;text-align:center">
+        ${escapeHtml(message)}
+      </div>`
+    : '';
 
   document.getElementById('screen').innerHTML = `
   <div class="screen">
     <div class="qr-wrap">
       <div class="qr-icon">📷</div>
-      <div class="qr-ttl">${tr('qrTitle')}</div>
-      <div class="qr-sub">${tr('qrSub')}</div>
+
+      ${noticeHtml}
+
+      <div style="font-size:24px;font-weight:900;color:#1a1a18;line-height:1.45;margin-bottom:10px">
+        入場証のQRを<br>読み取ってください
+      </div>
+
+      <div style="font-size:16px;font-weight:800;color:#C44A2D;line-height:1.55;margin-bottom:14px">
+        チラシ・ポスター・案内POPのQRではありません
+      </div>
+
+      <div style="font-size:14px;color:#555;line-height:1.6;margin-bottom:14px">
+        入場証に印字されている、来場者ID用のQRをカメラにかざしてください。
+      </div>
+
       <div class="qr-scan-area" id="qrScanArea">
         <div class="qr-corner tl"></div><div class="qr-corner tr"></div>
         <div class="qr-corner bl"></div><div class="qr-corner br"></div>
         <div class="qr-scan-line"></div>
         <div id="qrReader" style="width:100%;height:100%;border-radius:14px;overflow:hidden"></div>
       </div>
-      <div style="margin-top:8px">
-        <button class="qr-skip" onclick="skipQR()">${tr('qrSkip')}</button>
+
+      <div style="margin-top:14px">
+        <button class="qr-skip" onclick="skipQR()" style="font-size:15px;font-weight:800;padding:12px 18px">
+          QRが読めない場合はこちら
+        </button>
       </div>
     </div>
   </div>`;
@@ -145,6 +167,13 @@ function selectUserType(type) {
 
 function processQRCode(code) {
   const normalized = code.trim().toLowerCase();
+
+  if (/^https?:\/\//i.test(normalized) || normalized.includes('sogoten.jp')) {
+    stopQRCamera();
+    showQRScreen('これはアプリURLのQRです。入場証のQRを読み取ってください。');
+    return;
+  }
+
   const gyotai = GYOTAI_MAP[normalized] || null;
 
   stopQRCamera();
