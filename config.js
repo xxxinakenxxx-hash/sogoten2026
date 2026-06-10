@@ -128,6 +128,42 @@ function getUserType() {
   return userType || '';
 }
 
+// ============================================================
+// 入退場ログ：1セッション1回だけ送信
+// ============================================================
+function recordEntryExitOnce(entry) {
+  try {
+    if (!GAS_URL || !SESSION_ID) return;
+
+    const entryValue = entry || '入場';
+    const key = 'entryexit_logged_' + entryValue + '_' + SESSION_ID;
+
+    if (sessionStorage.getItem(key) === '1') {
+      return;
+    }
+
+    sessionStorage.setItem(key, '1');
+
+    const params = new URLSearchParams();
+    params.set('action', 'entryexit');
+    params.set('entry', entryValue);
+    params.set('qr', visitorQRCode || '');
+    params.set('gyotai', visitorGyotai || '');
+    params.set('session', SESSION_ID);
+    params.set('userType', userType || '');
+
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    }).catch(() => {});
+  } catch (e) {
+    // 入退場ログ失敗で来場者画面を止めない
+  }
+}
+
 // 行動ログ（退場レポート用）
 let actionLog = {
   searchKeywords: [],   // [{q, ts}]
