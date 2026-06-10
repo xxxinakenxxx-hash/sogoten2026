@@ -96,20 +96,24 @@ window.addEventListener('load', async () => {
     visitorGyotai = '';
     userType = 'marubishi_staff';
     saveVisitor();
+    recordEntryExitOnce('入場');
     showReceptionHome();
     return;
   }
 
   const hasConsent = localStorage.getItem(CONSENT_KEY) === '1';
+
   if (!hasConsent) {
     showConsentScreen();
   } else if (visitorQRCode && !userType) {
     userType = 'visitor';
     saveVisitor();
+    recordEntryExitOnce('入場');
     showHome();
   } else if (!visitorQRCode && !userType) {
     showQRScreen();
   } else {
+    recordEntryExitOnce('入場');
     showHome();
   }
 });
@@ -153,5 +157,11 @@ function selectUserType(type) {
   visitorGyotai = '';
   userType = type;
   saveVisitor();
+
+  const consent = localStorage.getItem(CONSENT_KEY);
+  if (consent === '1') {
+    recordEntryExitOnce('入場');
+  }
+
   showHome();
 }
