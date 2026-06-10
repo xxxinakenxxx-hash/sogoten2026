@@ -137,7 +137,7 @@ function selectUserType(type) {
 
   const consent = localStorage.getItem(CONSENT_KEY);
   if (consent === '1') {
-    recordEntryExit('入場');
+    recordEntryExitOnce('入場');
   }
 
   showHome();
@@ -163,7 +163,7 @@ function processQRCode(code) {
       searchCount: 0
     });
 
-    recordEntryExit('入場');
+    recordEntryExitOnce('入場');
   }
 
   showGyotaiConfirm(gyotai, normalized);
