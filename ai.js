@@ -102,6 +102,21 @@ function aiSend() {
   const msg = inp.value.trim();
   if (!msg) return;
 
+  if (isPrivacyPolicyQuestion(msg)) {
+    inp.value = '';
+    inp.style.height = 'auto';
+    sendAIMessage(msg);
+    return;
+  }
+
+  const fixedReply = getAIDirectBoothReply(msg);
+  if (fixedReply) {
+    inp.value = '';
+    inp.style.height = 'auto';
+    sendAIFixedReply(msg, fixedReply);
+    return;
+  }
+
   const suggestion = findAICompanySuggestion(msg);
   if (suggestion) {
     inp.value = '';
@@ -121,6 +136,12 @@ function isPrivacyPolicyQuestion(msg) {
   return /プライバシーポリシー|プライバシ|個人情報|個人データ|個人情報取扱|個人情報取扱い|個人情報取り扱い|同意文|同意内容|利用規約|利用目的|データ利用|データ取扱|データ取り扱い|情報取扱|情報取り扱い|privacy|privacypolicy|personaldata|personalinformation| 개인정보|개인정보|隐私|隱私|个人信息|個人信息|同意/.test(text);
 }
 
+function isAIBoothLocationQuestion(msg) {
+  const text = normalizeAIText(msg);
+
+  return /場所|ドコ|何処|ブース|小間|地図|マップ|map|行キ方|行キタイ|案内|出展場所|位置/.test(text);
+}
+
 function getFixedPrivacyPolicyReply() {
   if (lang === 'en') {
     return 'You can review the explanation about personal data and AI use from the small “Personal Data & AI Use” link at the bottom of the home screen.\n\nThis app uses information obtained through the app, such as search keywords, booths viewed, AI consultation content, notes, inquiry content and other information, for improving expo operations, providing reports to exhibitors and improving service quality.\n\nIf you use the inquiry feature, the company name, name, contact details and other information you enter may be provided to exhibitors and Marubishi sales. Some entered content may also be sent to AI services used by the Company for generating AI responses.';
@@ -135,6 +156,70 @@ function getFixedPrivacyPolicyReply() {
   }
 
   return '個人情報およびAI利用に関する説明は、ホーム画面下部の小さい文字リンク「個人情報・AI利用について」から確認できます。\n\n本アプリでは、検索キーワード、閲覧ブース情報、AIへの相談内容、メモ・問い合わせ内容その他の情報を、展示会の運営改善、出展社へのレポート提供およびサービス品質向上のために利用します。\n\n問い合わせ機能をご利用の場合、入力いただいた会社名・氏名・連絡先等が出展社および丸菱営業に提供される場合があります。また、入力内容の一部または全部は、AIによる回答生成を目的として当社が利用するAIサービスに送信される場合があります。';
+}
+
+function getAIDirectBoothReply(msg) {
+  if (!isAIBoothLocationQuestion(msg)) return '';
+
+  const contextBooths = getAIContextBooths(msg);
+
+  if (contextBooths.length === 1) {
+    const p = contextBooths[0];
+    const company = p.company || '該当出展社';
+    const booth = p.booth || '';
+
+    if (lang === 'en') {
+      return `${company} is at booth ${booth}. Please check the location on the MAP.`;
+    }
+
+    if (lang === 'zh') {
+      return `${company} 的展位是 ${booth}。请在会场MAP上确认位置。`;
+    }
+
+    if (lang === 'ko') {
+      return `${company}는 ${booth} 부스입니다. 위치는 MAP에서 확인해 주세요.`;
+    }
+
+    return `${company}はブース${booth}です。MAPで場所をご確認ください。`;
+  }
+
+  if (contextBooths.length === 0) {
+    if (lang === 'en') {
+      return 'I could not confirm the booth from the available exhibitor candidates. Please also try the booth search.';
+    }
+
+    if (lang === 'zh') {
+      return '目前的候选展商中无法确认该展位。也请尝试使用展位搜索。';
+    }
+
+    if (lang === 'ko') {
+      return '현재 후보 출전사 정보에서는 부스를 확인할 수 없습니다. 부스 검색도 이용해 주세요.';
+    }
+
+    return '手元の出展社候補では確認できませんでした。ブース検索もご利用ください。';
+  }
+
+  return '';
+}
+
+function sendAIFixedReply(msg, reply) {
+  appendAiMsg('user', msg);
+  aiHistory.push({role: 'user', content: msg});
+
+  logKeyword('[AI] ' + msg);
+
+  const replyId = 'aiFixed_' + Date.now();
+  appendAiMsg('bot', reply, replyId);
+
+  const replyEl = document.getElementById(replyId);
+  if (replyEl) {
+    replyEl.innerHTML = formatAIReply(reply);
+    appendTTSButton(replyEl, reply);
+    appendSearchShortcut(replyEl, msg, reply);
+  }
+
+  aiHistory.push({role: 'assistant', content: reply});
+  scrollAiToBottom();
 }
 
 function sendAIMessage(msg) {
@@ -200,6 +285,58 @@ function normalizeAICompanyCore(value) {
     .replace(/機械|食品|工業|産業|商事|製作所|製菓|製粉|化工|会社|会/g, '');
 }
 
+function normalizeAIQueryForBooth(value) {
+  let text = normalizeAIText(value);
+
+  const stopWords = [
+    'ノ場所ヲ教エテ',
+    'ノ場所教エテ',
+    '場所ヲ教エテ',
+    '場所教エテ',
+    'ドコニアリマスカ',
+    'ドコデスカ',
+    'ドコニアル',
+    '何処ニアリマスカ',
+    '何処デスカ',
+    '何処ニアル',
+    'ブース番号ヲ教エテ',
+    'ブース教エテ',
+    '小間番号ヲ教エテ',
+    '小間教エテ',
+    '出展場所',
+    '行キ方',
+    '行キタイ',
+    '案内シテ',
+    '教エテ',
+    '知リタイ',
+    '探シテル',
+    '探シテイル',
+    '場所',
+    'ドコ',
+    '何処',
+    'ブース番号',
+    'ブース',
+    '小間番号',
+    '小間',
+    '地図',
+    'マップ',
+    'map',
+    '出展シテル',
+    '出展シテイル',
+    '出展',
+    '案内',
+    '位置'
+  ];
+
+  stopWords.forEach(word => {
+    text = text.split(word.toLowerCase()).join('');
+  });
+
+  text = text.replace(/[ノヲハガニヘデト]+$/g, '');
+
+  return text;
+}
+
 function extractAITerms(value) {
   const raw = String(value || '');
   const parts = raw.split(/[\s　。、？！!?.・･ー－()（）「」『』【】\[\]\/／\-]+/g);
@@ -260,7 +397,7 @@ function scoreAIProduct(p, qNorm) {
 }
 
 function getAIContextBooths(userMsg) {
-  const qNormAI = normalizeAIText(userMsg);
+  const qNormAI = normalizeAIQueryForBooth(userMsg);
   if (!P || P.length === 0) return [];
   if (qNormAI.length < 2) return P.slice(0, 80);
 
@@ -282,8 +419,9 @@ function getAIContextBooths(userMsg) {
 function findAICompanySuggestion(userMsg) {
   if (!P || P.length === 0) return null;
 
-  const qNorm = normalizeAIText(userMsg);
-  const qCore = normalizeAICompanyCore(userMsg);
+  const queryText = normalizeAIQueryForBooth(userMsg) || normalizeAIText(userMsg);
+  const qNorm = queryText;
+  const qCore = normalizeAICompanyCore(queryText);
   if (qNorm.length < 2 || qCore.length < 2) return null;
 
   const exactAliasCandidates = P.map(p => {
@@ -489,7 +627,7 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 
 【回答ルール】
 1. 業態に合わせた専門的なアドバイスをする（${visitorGyotai || '全業態向け'}視点）
-2. 出展社を案内する際は必ずブース番号を添える（例: ホシザキ C11）
+2. 出展社を案内する際は必ずブース番号を添える（例: 出展社名 ブース番号）
 3. 複数の関連出展社があれば最大6社まで提案する。ブース検索で複数件ヒットする商品名・素材名・カテゴリ名の場合は、1社だけに絞らず、該当ブースをできるだけ複数列挙する
 4. 場所を聞かれたら「MAPで見る」ことを促す
 5. 見積・詳細希望には丸菱営業担当への連携を提案する
@@ -499,7 +637,8 @@ ${aiDocContext ? '【補助資料（運営からの追加情報）】\n' + aiDoc
 9. 【会場の出展社（抜粋）】に該当出展社がある場合は、「情報がない」と答えず、その出展社情報をもとに案内する
 10. 「キッチンカー」「フードコーナー」「飲食」「食事」「昼食」「軽食」「ドリンク」と聞かれた場合は、原則として会場施設案内として扱い、フードコーナー・ドリンクコーナー・キッチンカーは会場北側と案内する。キッチンカー向け食材・包材など明確に商材を探している質問の場合のみ、出展社案内に切り替える
 11. 商品名・素材名・カテゴリ名で複数の出展社が該当する場合は、1社だけに絞らず、検索結果・AI補助資料に該当する出展社を最大6件まで案内する。特に「ピスタチオ」のようにブース検索で複数件ヒットする語は、AI回答でも複数社を列挙する。回答本文の出展社数と「AIが案内したブース」の件数が大きくずれないようにする
-12. 「サンプル」「試食」「配布」「景品」「もらえる」「物をもらえる」「ノベルティ」「粗品」「プレゼント」などについて聞かれた場合は、出展社情報または補助資料に明確な配布情報がある場合を除き、特定のブース名・出展社名・ブース番号を挙げて案内しない。「配布している」「もらえる」「あります」「期待できる」「可能性があります」「かもしれません」など、未確認情報を推測する表現も使わない。確認できない場合は、「配布物・サンプル・試食・ノベルティの有無は、各ブースで直接ご確認ください」と回答する`;
+12. 「サンプル」「試食」「配布」「景品」「もらえる」「物をもらえる」「ノベルティ」「粗品」「プレゼント」などについて聞かれた場合は、出展社情報または補助資料に明確な配布情報がある場合を除き、特定のブース名・出展社名・ブース番号を挙げて案内しない。「配布している」「もらえる」「あります」「期待できる」「可能性があります」「かもしれません」など、未確認情報を推測する表現も使わない。確認できない場合は、「配布物・サンプル・試食・ノベルティの有無は、各ブースで直接ご確認ください」と回答する
+13. 【会場の出展社（抜粋）】に候補がない場合でも、「出展していない」と断定しない。「手元の候補では確認できません。ブース検索もご利用ください」と案内する`;
   
   const payload = {
     action: 'ai',
@@ -531,7 +670,7 @@ function demoAIResponse(msg) {
   const m = msg.toLowerCase();
 
   if (P && P.length > 0) {
-    const qNorm = normalizeAIText(msg);
+    const qNorm = normalizeAIQueryForBooth(msg);
 
     const scored = P.map(p => {
       return { p, score: scoreAIProduct(p, qNorm) };
@@ -565,7 +704,7 @@ function demoAIResponse(msg) {
 
 function appendAiMsg(role, text, id) {
   const msgs = document.getElementById('aiMsgs');
-  if (!msgs) return;
+  if (!msgs) return null;
 
   const now = new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
   const div = document.createElement('div');
@@ -576,6 +715,8 @@ function appendAiMsg(role, text, id) {
 
   msgs.appendChild(div);
   scrollAiToBottom();
+
+  return div;
 }
 
 function appendSearchShortcut(afterEl, userMsg, aiReply) {
