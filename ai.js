@@ -640,7 +640,7 @@ async function callOpenAI(userMsg) {
   const contextBooths = getAIContextBooths(userMsg);
 
   const boothContext = contextBooths.map(p =>
-    `${p.booth} ${p.company}：${(p.tags||[]).slice(0,5).join('、')}`
+    `${p.booth} ${p.company}：${(p.tags||[]).slice(0,15).join('、')}`
   ).join('\n');
 
   const seminarsContext = SEMINARS.map(s =>
