@@ -232,6 +232,72 @@ function getAIExactRegisteredBoothReply(msg) {
       extractAITerms(alias).forEach(t => terms.push(t));
     });
 
+    const uniqueTerms = Array.from(new Set(terms.filter(Boolean)));
+
+    const hit = uniqueTerms.some(t => {
+      if (!t) return false;
+      if (t === qNorm) return true;
+      if (t.length >= 4 && qNorm.includes(t)) return true;
+      if (qNorm.length >= 4 && t.includes(qNorm)) return true;
+      return false;
+    });
+
+    if (hit) matches.push(p);
+  });
+
+  const unique = [];
+  const seen = {};
+
+  matches.forEach(p => {
+    const key = p.booth || p.company;
+    if (!key || seen[key]) return;
+    seen[key] = true;
+    unique.push(p);
+  });
+
+  if (unique.length !== 1) return '';
+
+  const p = unique[0];
+  const company = p.company || '該当出展社';
+  const booth = p.booth || '';
+
+  if (lang === 'en') {
+    return `${company} is at booth ${booth}. Please check the location on the MAP.`;
+  }
+
+  if (lang === 'zh') {
+    return `${company} 的展位是 ${booth}。请在会场MAP上确认位置。`;
+  }
+
+  if (lang === 'ko') {
+    return `${company}는 ${booth} 부스입니다. 위치는 MAP에서 확인해 주세요.`;
+  }
+
+  return `${company}はブース${booth}です。MAPで場所をご確認ください。`;
+}
+
+function getAIExactRegisteredBoothReply(msg) {
+  if (!P || P.length === 0) return '';
+
+  const qNorm = normalizeAIQueryForBooth(msg) || normalizeAIText(msg);
+  if (!qNorm || qNorm.length < 2) return '';
+
+  const matches = [];
+
+  P.forEach(p => {
+    const terms = [];
+
+    extractAITerms(p.booth).forEach(t => terms.push(t));
+    extractAITerms(p.company).forEach(t => terms.push(t));
+
+    (p.tags || []).forEach(tag => {
+      extractAITerms(tag).forEach(t => terms.push(t));
+    });
+
+    (p.voiceAliases || []).forEach(alias => {
+      extractAITerms(alias).forEach(t => terms.push(t));
+    });
+
     const hit = terms.some(t => {
       if (!t) return false;
       if (t === qNorm) return true;
